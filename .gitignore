@@ -1,0 +1,5 @@
+# Jetbrains stuff
+/.idea
+
+# Virtual environments
+/*venv*

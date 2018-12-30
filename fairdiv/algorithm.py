@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import itertools
 
+from properties import is_pareto, is_envy_free, is_max_min
+
 
 def original_sequential(agents, goods):
     """
@@ -50,9 +52,12 @@ def original_sequential(agents, goods):
 
 
 def generate_all_allocations(goods):
-    allocs = itertools.chain.from_iterable(
-        itertools.combinations(goods, n) for n in range(len(goods) + 1)
-    )
+    """
+    Generate all possible allocations. I think it should generate all different permutations
+    :param goods: all considered goods
+    :return: allocation for 2 agents
+    """
+    allocs = list(itertools.combinations(goods, len(goods) // 2))
     return [(tuple(alloc), tuple([g for g in goods if g not in alloc])) for alloc in allocs]
 
 
@@ -68,14 +73,17 @@ if __name__ == '__main__':
 
     a2 = Agent("B")
     a2.preferences = [
-        goods[0], goods[1], goods[2], goods[3]
+        goods[1], goods[3], goods[0], goods[2]
     ]
 
-    # allocs = original_sequential((a1, a2), goods)
-    allocs = generate_all_allocations(goods)
+    allocs = original_sequential((a1, a2), goods)
+    all_allocs = generate_all_allocations(goods)
 
     print("Allocations found :")
     for i, alloc in enumerate(allocs):
         print("\tAllocation n°{}".format(i+1))
         print("\t\t Agent {}: {}".format(a1, alloc[0]))
         print("\t\t Agent {}: {}".format(a2, alloc[1]))
+        print("\t\t Pareto optimal: {}".format(is_pareto(alloc, all_allocs, (a1, a2))))
+        print("\t\t Envy-free: {}".format(is_envy_free(alloc, (a1, a2))))
+        print("\t\t Max-min: {}".format(is_max_min(alloc, allocs, (a1, a2))))

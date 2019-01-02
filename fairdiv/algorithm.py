@@ -50,6 +50,57 @@ def original_sequential(agents, goods):
     inner(([], []), goods, 1)
     return allocations
 
+def restricted_sequential(agents, goods):
+    """
+    Use the Restricted Sequential Algorithm to compute a fair division of provided goods.
+    :param agents: The agents with their preferences over provided goods
+    :param goods: the goods
+    :return: a set of possible allocations
+    """
+    assert len(agents) == 2
+    assert len(goods) % 2 == 0
+
+    allocations = set()
+
+    def inner(z, u, l):
+        """
+        Follows the allocation process from a given point. Branches if necessary.
+        Puts the allocations it finds in the allocations set defined above
+        :param z: The allocation currently working on
+        :param u: The list of unallocated items
+        :param l: The max rank of goods to consider
+        :return:
+        """
+        if len(u) == 0:
+            allocations.add((tuple(z[0]), tuple(z[1])))
+            return
+
+        ha_l = [p for p in agents[0].preferences[:l] if p in u]
+        hb_l = [p for p in agents[1].preferences[:l] if p in u]
+
+        if ha_l[0] != hb_l[0]:
+            za, zb = z[0][:], z[1][:]
+            v = [good for good in u if good != ha_l[0] and good != hb_l[0]]
+            za.append(ha_l[0])
+            zb.append(hb_l[0])
+            inner((za, zb), v, l+1)
+        else:
+            if len(ha_l) > 1:
+                za, zb = z[0][:], z[1][:]
+                v = [good for good in u if good != ha_l[1] and good != hb_l[0]]
+                za.append(ha_l[1])
+                zb.append(hb_l[0])
+                inner((za, zb), v, l + 1)
+            if len(hb_l) > 1:
+                za, zb = z[0][:], z[1][:]
+                v = [good for good in u if good != ha_l[0] and good != hb_l[1]]
+                za.append(ha_l[0])
+                zb.append(hb_l[1])
+                inner((za, zb), v, l + 1)
+
+    inner(([], []), goods, 1)
+    return allocations
+
 
 def generate_all_allocations(goods):
     """

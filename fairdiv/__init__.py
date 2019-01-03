@@ -34,6 +34,33 @@ class Agent(object):
     def __hash__(self):
         return self.name.__hash__()
 
+    def _get_good(self, rank, goods):
+        pref = self._pref
+        if rank < 0:
+            rank = -rank
+            pref = self._pref[::-1]
+        for good in pref:
+            if good in goods:
+                rank -= 1
+                if rank == 0:
+                    return good
+        return None
+
+    def top(self, goods):
+        return self._get_good(1, goods)
+
+    def sb(self, goods):
+        return self._get_good(2, goods)
+
+    def last(self, goods):
+        return self._get_good(-1, goods)
+
+    def h(self, goods, l):
+        return [good for good in self._pref[:l] if good in goods]
+
+    def rank(self, good):
+        return self._pref.index(good)
+
 
 class Good(object):
     """
@@ -57,3 +84,16 @@ class Good(object):
 
     def __hash__(self):
         return self.name.__hash__()
+
+
+def max_min_rank(agents, goods):
+    k = 0
+    for good in goods:
+        best_rank = len(goods)
+        for agent in agents:
+            rank = agent.rank(good)
+            if rank <= best_rank:
+                best_rank = rank
+        if k <= best_rank:
+            k = best_rank
+    return k+1

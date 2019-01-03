@@ -3,6 +3,7 @@ import itertools
 
 from properties import is_pareto, is_envy_free, is_max_min
 
+from fairdiv import Agent, Good, max_min_rank
 
 def original_sequential(agents, goods):
     """
@@ -49,6 +50,7 @@ def original_sequential(agents, goods):
 
     inner(([], []), goods, 1)
     return allocations
+
 
 def restricted_sequential(agents, goods):
     """
@@ -102,6 +104,56 @@ def restricted_sequential(agents, goods):
     return allocations
 
 
+def singles_doubles(agents, goods):
+    allocations = set()
+
+    k = max_min_rank(agents, goods)
+
+    ha_k = set(agents[0].h(goods, k))
+    hb_k = set(agents[1].h(goods, k))
+
+    za = list(ha_k.difference(hb_k))
+    zb = list(hb_k.difference(ha_k))
+    
+    u = list(ha_k.intersection(hb_k))
+
+    def inner(z, u):
+        if len(u) == 0:
+            allocations.add((tuple(z[0]), tuple(z[1])))
+            return
+
+        top_a = agents[0].top(u)
+        top_b = agents[1].top(u)
+
+        sb_a = agents[0].sb(u)
+        sb_b = agents[0].sb(u)
+
+        if top_a != top_b:
+            za, zb = z[0][:], z[1][:]
+            v = [good for good in u if good != top_a and good != top_b]
+            za.append(top_a)
+            zb.append(top_b)
+            inner((za, zb), v)
+
+        za, zb = z[0][:], z[1][:]
+        za.append(top_a)
+        zb.append(sb_b)
+        if is_envy_free((za, zb), agents):
+            v = [good for good in u if good != top_a and good != sb_b]
+            inner((za, zb), v)
+
+        za, zb = z[0][:], z[1][:]
+        za.append(sb_a)
+        zb.append(top_b)
+        if is_envy_free((za, zb), agents):
+            v = [good for good in u if good != sb_a and good != top_b]
+            inner((za, zb), v)
+
+    inner((za, zb), u)
+    return allocations
+
+
+
 def generate_all_allocations(goods):
     """
     Generate all possible allocations. I think it should generate all different permutations
@@ -113,7 +165,6 @@ def generate_all_allocations(goods):
 
 
 if __name__ == '__main__':
-    from fairdiv import Agent, Good
 
     goods = [Good(str(i)) for i in range(4)]
 
@@ -127,7 +178,7 @@ if __name__ == '__main__':
         goods[1], goods[3], goods[0], goods[2]
     ]
 
-    allocs = original_sequential((a1, a2), goods)
+    allocs = singles_doubles((a1, a2), goods)
     all_allocs = generate_all_allocations(goods)
 
     print("Allocations found :")

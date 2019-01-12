@@ -53,10 +53,9 @@ def is_envy_free(alloc, agents):
     return True
 
 
-def is_max_min(alloc, allocs, agents):
-    left = max([max([agents[i].preferences.index(item) for item in a]) for i, a in enumerate(
-        alloc)])
-    right = min([max([max([agents[i].preferences.index(item) for item in a]) for i, a in enumerate(
-        current)]) for
-                 current in allocs])
+def is_max_min(X, A, M):
+    left = max([max([m.preferences.index(i) for i in X[ind]]) for ind, m in enumerate(M)])
+    right = min([max(
+        [max([m.preferences.index(i) for i in Y[ind]]) for ind, m in enumerate(M)]
+    ) for Y in A])
     return left == right

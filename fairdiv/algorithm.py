@@ -173,7 +173,7 @@ def bottom_up(agents, goods):
     return inner(0, ([], []), u[:]), inner(1, ([], []), u)
 
 
-def trump_algorithm(agents, goods):  # Fixme: NOT WORKING
+def trump_algorithm(agents, goods):
     """
     Use the Trump algorithm to compute a fair division of provided goods.
     :param agents: agents (to get preferences)
@@ -181,23 +181,23 @@ def trump_algorithm(agents, goods):  # Fixme: NOT WORKING
     :return: all possible allocations
     """
 
-    def inner(agents):  # On purpose
-        u = goods[:]
-        alloc = ([], [])
-
-        for l in range(1, len(goods) + 1, 2):
-            for i, agent in enumerate(agents):
-                hm_l = [p for p in agents[0].preferences[:l] if p in u]
-
+    def inner(M):
+        V = ([], [])
+        U = goods[:]
+        for l in range(1, len(goods), 2):
+            for i, m in enumerate(M):
+                hm_l = m.h(U, l)
                 if len(hm_l) == 0:
-                    return
+                    return None
+                item = M[(i+1) % 2].last(hm_l)
+                U.remove(item)
+                V[i].append(item)
+        return V
 
-                good = sorted(hm_l, key=lambda x: agents[(i+1) % 2].preferences.index(x))[-1]
-
-                alloc[i].append(good)
-                u.remove(good)
-
-    return inner(agents)#, inner((agents[1], agents[0]))  # Each agent starts
+    r1 = inner(agents)
+    r2 = inner((agents[1], agents[0]))
+    r2 = r2[1], r2[0] if r2 is not None else r2  # r2 was inverted
+    return [r for r in (r1, r2) if r is not None]
 
 
 def generate_all_allocations(goods):
@@ -240,8 +240,8 @@ if __name__ == '__main__':
 
     # allocs = singles_doubles((a1, a2), goods)
     # allocs = original_sequential((a1, a2), goods)
-    # allocs = trump_algorithm((a1, a2), goods)
-    allocs = bottom_up((a1, a2), goods)
+    allocs = trump_algorithm((a1, a2), goods)
+    # allocs = bottom_up((a1, a2), goods)
     all_allocs = generate_all_allocations(goods)
 
     print("Allocations found :")

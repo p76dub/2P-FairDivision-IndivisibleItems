@@ -4,6 +4,14 @@ import properties as prop
 
 
 def gather_data(agents, allocs, all_allocs, pareto=True, max_min=True, envy=True):
+    # Eliminate duplicates
+    uniques = []
+    for a in allocs:
+        if a not in uniques:
+            uniques.append(a)
+
+    allocs = uniques
+
     # Create structure
     stats = {
         "Allocations found": len(allocs),
@@ -11,6 +19,7 @@ def gather_data(agents, allocs, all_allocs, pareto=True, max_min=True, envy=True
         "Allocations": []
     }
 
+    # Iterate over allocations and create stats about them
     for alloc in allocs:
         a_stats = {
             agents[i]: v for i, v in enumerate(alloc)

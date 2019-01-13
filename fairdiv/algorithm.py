@@ -225,6 +225,7 @@ def generate_all_allocations(goods):
 
 
 if __name__ == '__main__':
+    import statistics
 
     goods = [Good(str(i)) for i in range(4)]
 
@@ -244,11 +245,4 @@ if __name__ == '__main__':
     # allocs = bottom_up((a1, a2), goods)
     all_allocs = generate_all_allocations(goods)
 
-    print("Allocations found :")
-    for i, alloc in enumerate(allocs):
-        print("\tAllocation n°{}".format(i+1))
-        print("\t\t Agent {}: {}".format(a1, alloc[0]))
-        print("\t\t Agent {}: {}".format(a2, alloc[1]))
-        print("\t\t Pareto optimal: {}".format(is_pareto(alloc, all_allocs, (a1, a2))))
-        print("\t\t Envy-free: {}".format(is_envy_free(alloc, (a1, a2))))
-        print("\t\t Max-min: {}".format(is_max_min(alloc, all_allocs, (a1, a2))))
+    statistics.print_statistics(statistics.gather_data((a1, a2), allocs, all_allocs))

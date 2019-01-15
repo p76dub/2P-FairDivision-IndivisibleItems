@@ -93,3 +93,14 @@ def is_maximal_borda_sum(X, A, M):
     return sum([M[i].borda(X[i]) for i in range(len(M))]) == max(
         [sum([M[i].borda(Y[i]) for i in range(len(M))]) for Y in A]
     )
+
+
+def is_borda_envy_free(X, M):
+    """
+    Test if the provided allocation X is borda_envy_free
+    :param X: the allocation to test
+    :param M: the agents
+    :return: True if the allocation is Borda-envy-free, else False
+    """
+    return M[0].borda(X[0]) >= M[0].borda(X[1]) and M[1].borda(X[1]) >= M[1].borda(X[0])
+

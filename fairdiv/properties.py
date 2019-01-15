@@ -59,3 +59,24 @@ def is_max_min(X, A, M):
         [max([m.preferences.index(i) for i in Y[ind]]) for ind, m in enumerate(M)]
     ) for Y in A])
     return left == right
+
+
+def is_borda_pareto(X, A, M):
+    """
+    Test if allocation X is Borda pareto given agents m and all available allocations
+    :param X: allocation to test
+    :param A: all available allocations for current problem§
+    :param M: the agents
+    :return: True if X is Borda pareto, 
+    """
+    ba = M[0].borda(X[0])
+    bb = M[1].borda(X[1])
+
+    for (Ai, Bi) in A:
+        bai = M[0].borda(Ai)
+        bbi = M[1].borda(Bi)
+
+        if (bai > ba and bbi >= bb) or (bbi > bb and bai >= ba):
+            return False
+
+    return True

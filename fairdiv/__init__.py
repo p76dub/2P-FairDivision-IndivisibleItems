@@ -115,6 +115,22 @@ class Agent(object):
         """
         return self._pref.index(good)+1
 
+    def borda(self, goods, N=None):
+        """
+        Return the Borda score of this agent.
+        :param goods: goods allocated to agent
+        :param N: number of goods. If None, set to `len(goods) * 2`
+        :return: Borda score of the current allocation
+        """
+        _sum = 0
+        if N is None:
+            N = len(goods) * 2
+
+        for good in goods:
+            _sum += N + 1 - self.rank(good)
+
+        return _sum
+
 
 class Good(object):
     """

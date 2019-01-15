@@ -1,4 +1,54 @@
 # -*- coding: utf-8 -*-
+import collections
+import itertools
+import pickle
+import atexit
+
+
+class Database(object):
+    _db_files_root = "resources/database/"
+    _db_files_extension = ".db"
+    _open_files = dict()
+    _is_at_exit_set = False
+
+    @staticmethod
+    def get(func, *params):
+        if func.__name__ not in Database._open_files:
+            if not Database._is_at_exit_set:
+                atexit.register(Database.save_files)
+                Database._is_at_exit_set = True
+            file_path = Database._db_files_root + func.__name__ + Database._db_files_extension
+            try:
+                Database._open_files[func.__name__] = pickle.load(open(file_path, "rb"))
+            except FileNotFoundError:
+                Database._open_files[func.__name__] = dict()
+        func_dict = Database._open_files[func.__name__]
+        if params not in func_dict:
+            temp = func(*params)
+            if isinstance(temp, collections.Iterable):
+                temp = list(temp)
+            func_dict[params] = temp
+        return func_dict[params]
+
+    @staticmethod
+    def save_files():
+        print("saving")
+        for func in Database._open_files:
+            file_path = Database._db_files_root + func + Database._db_files_extension
+            pickle.dump(Database._open_files[func], open(file_path, "wb"))
+
+
+class Utils(object):
+
+    @staticmethod
+    def get_possible_injections(alloc1, alloc2):
+        """
+        Returns a list of possible mappings from alloc1 to alloc2
+        :param alloc1:
+        :param alloc2:
+        :return:
+        """
+        return [[j for j in map(lambda x, y: (x, y), alloc1, i)] for i in Database.get(itertools.permutations, alloc2)]
 
 
 class Agent(object):
@@ -115,6 +165,36 @@ class Agent(object):
         """
         return self._pref.index(good)+1
 
+    def compare_goods(self, good1, good2):
+        return self.rank(good1) < self.rank(good2)
+
+    @staticmethod
+    def _is_ordinally_less(agent, alloc1, alloc2=None):
+        injections = Utils.get_possible_injections(alloc1, alloc2)
+        ordinally_less = False
+        for injection in injections:
+            ordinally_less = True
+            for (x,y) in injection:
+                if not agent.compare_goods(y, x):
+                    ordinally_less = False
+                    break
+            if ordinally_less:
+                break
+        return ordinally_less
+
+    def is_ordinally_less(self, alloc1, alloc2=None):
+        """
+        Checks if :param:`alloc1` is ordinally less than :param:`alloc2`.
+        :param alloc1: An allocation
+        :param alloc2: An allocation, If set to None, the allocation :param:`alloc1` is compared to its complementary in the set of goods.
+        :return: True if :param:`alloc1` is ordinally less :param:`alloc2`
+        """
+        if alloc2 is None:
+            alloc2 = tuple([good for good in self.preferences if good not in alloc1])
+        if not isinstance(alloc1, tuple):
+            alloc1 = tuple(alloc1)
+        return Database.get(Agent._is_ordinally_less, self, alloc1, alloc2)
+
 
 class Good(object):
     """
@@ -138,6 +218,16 @@ class Good(object):
 
     def __hash__(self):
         return self.name.__hash__()
+
+    @staticmethod
+    def generate_all_allocations(goods):
+        """
+        Generate all possible allocations. I think it should generate all different permutations
+        :param goods: all considered goods
+        :return: allocation for 2 agents
+        """
+        allocs = list(itertools.combinations(goods, len(goods) // 2))
+        return [(tuple(alloc), tuple([g for g in goods if g not in alloc])) for alloc in allocs]
 
 
 def max_min_rank(agents, goods):

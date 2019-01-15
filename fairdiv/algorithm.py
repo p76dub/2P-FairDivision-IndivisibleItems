@@ -22,8 +22,8 @@ def original_sequential(agents, goods):
             allocations.add((tuple(z[0]), tuple(z[1])))
             return
 
-        ha_l = [p for p in agents[0].preferences[:l] if p in u]
-        hb_l = [p for p in agents[1].preferences[:l] if p in u]
+        ha_l = agents[0].preferences[:l]
+        hb_l = agents[1].preferences[:l]
         found = False
 
         for i, j in itertools.combinations(u, 2):
@@ -54,7 +54,7 @@ def original_sequential(agents, goods):
 
 def restricted_sequential(agents, goods):
     """
-    Use the Restricted Sequential Algorithm to compute a fair division of provided goods.
+    Uses the Restricted Sequential Algorithm to compute a fair division of provided goods.
     :param agents: The agents with their preferences over provided goods
     :param goods: the goods
     :return: a set of possible allocations
@@ -105,6 +105,12 @@ def restricted_sequential(agents, goods):
 
 
 def singles_doubles(agents, goods):
+    """
+    Uses the singles doubles algorithm to compute fair divisions of provided goods
+    :param agents: The agents with their preferences over provided goods
+    :param goods: the goods
+    :return: a set of possible allocations
+    """
     allocations = set()
 
     k = max_min_rank(agents, goods)
@@ -114,10 +120,17 @@ def singles_doubles(agents, goods):
 
     za = list(ha_k.difference(hb_k))
     zb = list(hb_k.difference(ha_k))
-
+    
     u = list(ha_k.intersection(hb_k))
 
     def inner(z, u):
+        """
+                Follows the allocation process from a given point. Branches if necessary.
+                Puts the allocations it finds in the allocations set defined above
+                :param z: The allocation currently working on
+                :param u: The list of unallocated items
+                :return:
+                """
         if len(u) == 0:
             allocations.add((tuple(z[0]), tuple(z[1])))
             return

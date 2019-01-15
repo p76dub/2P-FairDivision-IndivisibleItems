@@ -2,8 +2,8 @@
 import itertools
 
 from properties import is_pareto, is_envy_free, is_max_min
-
 from fairdiv import Agent, Good, max_min_rank
+
 
 def original_sequential(agents, goods):
     """
@@ -22,8 +22,8 @@ def original_sequential(agents, goods):
             allocations.add((tuple(z[0]), tuple(z[1])))
             return
 
-        ha_l = agents[0].preferences[:l]
-        hb_l = agents[1].preferences[:l]
+        ha_l = [p for p in agents[0].preferences[:l] if p in u]
+        hb_l = [p for p in agents[1].preferences[:l] if p in u]
         found = False
 
         for i, j in itertools.combinations(u, 2):
@@ -114,7 +114,7 @@ def singles_doubles(agents, goods):
 
     za = list(ha_k.difference(hb_k))
     zb = list(hb_k.difference(ha_k))
-    
+
     u = list(ha_k.intersection(hb_k))
 
     def inner(z, u):
@@ -153,6 +153,52 @@ def singles_doubles(agents, goods):
     return allocations
 
 
+def bottom_up(agents, goods):
+    """
+    Use the bottom-up algorithm to calculate allocations.
+    :param agents:
+    :param goods:
+    :return:
+    """
+    def inner(m, z, u):
+        if len(u) == 0:
+            return z
+
+        g = agents[m].last(u)
+        z[(m+1) % 2].append(g)
+        u.remove(g)
+        return inner((m+1) % 2, z, u)
+
+    u = goods[:]
+    return inner(0, ([], []), u[:]), inner(1, ([], []), u)
+
+
+def trump_algorithm(agents, goods):
+    """
+    Use the Trump algorithm to compute a fair division of provided goods.
+    :param agents: agents (to get preferences)
+    :param goods: all considered goods
+    :return: all possible allocations
+    """
+
+    def inner(M):
+        V = ([], [])
+        U = goods[:]
+        for l in range(1, len(goods), 2):
+            for i, m in enumerate(M):
+                hm_l = m.h(U, l)
+                if len(hm_l) == 0:
+                    return None
+                item = M[(i+1) % 2].last(hm_l)
+                U.remove(item)
+                V[i].append(item)
+        return V
+
+    r1 = inner(agents)
+    r2 = inner((agents[1], agents[0]))
+    r2 = r2[1], r2[0] if r2 is not None else r2  # r2 was inverted
+    return [r for r in (r1, r2) if r is not None]
+
 
 def generate_all_allocations(goods):
     """
@@ -160,11 +206,26 @@ def generate_all_allocations(goods):
     :param goods: all considered goods
     :return: allocation for 2 agents
     """
+    # Generate allocations for one agent
     allocs = list(itertools.combinations(goods, len(goods) // 2))
-    return [(tuple(alloc), tuple([g for g in goods if g not in alloc])) for alloc in allocs]
+
+    # Generate all permutations
+    p_allocs = []
+    for alloc in allocs:
+        p_allocs.extend(itertools.permutations(alloc))
+
+    c_allocs = []
+    for alloc in p_allocs:
+        other = [g for g in goods if g not in alloc]
+        perms = itertools.permutations(other)
+        for perm in perms:
+            c_allocs.append((tuple(alloc), tuple(perm)))
+
+    return c_allocs
 
 
 if __name__ == '__main__':
+    import statistics
 
     goods = [Good(str(i)) for i in range(4)]
 
@@ -178,14 +239,10 @@ if __name__ == '__main__':
         goods[1], goods[3], goods[0], goods[2]
     ]
 
-    allocs = singles_doubles((a1, a2), goods)
+    # allocs = singles_doubles((a1, a2), goods)
+    # allocs = original_sequential((a1, a2), goods)
+    allocs = trump_algorithm((a1, a2), goods)
+    # allocs = bottom_up((a1, a2), goods)
     all_allocs = generate_all_allocations(goods)
 
-    print("Allocations found :")
-    for i, alloc in enumerate(allocs):
-        print("\tAllocation n°{}".format(i+1))
-        print("\t\t Agent {}: {}".format(a1, alloc[0]))
-        print("\t\t Agent {}: {}".format(a2, alloc[1]))
-        print("\t\t Pareto optimal: {}".format(is_pareto(alloc, all_allocs, (a1, a2))))
-        print("\t\t Envy-free: {}".format(is_envy_free(alloc, (a1, a2))))
-        print("\t\t Max-min: {}".format(is_max_min(alloc, allocs, (a1, a2))))
+    statistics.print_statistics(statistics.gather_data((a1, a2), allocs, all_allocs))

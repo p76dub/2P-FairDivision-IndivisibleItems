@@ -53,10 +53,54 @@ def is_envy_free(alloc, agents):
     return True
 
 
-def is_max_min(alloc, allocs, agents):
-    left = max([max([agents[i].preferences.index(item) for item in a]) for i, a in enumerate(
-        alloc)])
-    right = min([max([max([agents[i].preferences.index(item) for item in a]) for i, a in enumerate(
-        current)]) for
-                 current in allocs])
+def is_max_min(X, A, M):
+    left = max([max([m.preferences.index(i) for i in X[ind]]) for ind, m in enumerate(M)])
+    right = min([max(
+        [max([m.preferences.index(i) for i in Y[ind]]) for ind, m in enumerate(M)]
+    ) for Y in A])
     return left == right
+
+
+def is_borda_pareto(X, A, M):
+    """
+    Test if allocation X is Borda pareto given agents m and all available allocations
+    :param X: allocation to test
+    :param A: all available allocations for current problem§
+    :param M: the agents
+    :return: True if X is Borda pareto, 
+    """
+    ba = M[0].borda(X[0])
+    bb = M[1].borda(X[1])
+
+    for (Ai, Bi) in A:
+        bai = M[0].borda(Ai)
+        bbi = M[1].borda(Bi)
+
+        if (bai > ba and bbi >= bb) or (bbi > bb and bai >= ba):
+            return False
+
+    return True
+
+
+def is_maximal_borda_sum(X, A, M):
+    """
+    Test if an allocation X is maximal-Borda-sum given agents m and all available allocations
+    :param X: allocation to test
+    :param A: all available allocations for the current problem
+    :param M: the agents
+    :return: True if X is maximal Borda sum
+    """
+    return sum([M[i].borda(X[i]) for i in range(len(M))]) == max(
+        [sum([M[i].borda(Y[i]) for i in range(len(M))]) for Y in A]
+    )
+
+
+def is_borda_envy_free(X, M):
+    """
+    Test if the provided allocation X is borda_envy_free
+    :param X: the allocation to test
+    :param M: the agents
+    :return: True if the allocation is Borda-envy-free, else False
+    """
+    return M[0].borda(X[0]) >= M[0].borda(X[1]) and M[1].borda(X[1]) >= M[1].borda(X[0])
+

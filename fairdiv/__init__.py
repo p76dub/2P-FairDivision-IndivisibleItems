@@ -13,16 +13,16 @@ class Database(object):
 
     @staticmethod
     def get(func, *params):
-        if func.__name__ not in Database._open_files:
+        if func.__qualname__ not in Database._open_files:
             if not Database._is_at_exit_set:
                 atexit.register(Database.save_files)
                 Database._is_at_exit_set = True
-            file_path = Database._db_files_root + func.__name__ + Database._db_files_extension
+            file_path = Database._db_files_root + func.__qualname__ + Database._db_files_extension
             try:
-                Database._open_files[func.__name__] = pickle.load(open(file_path, "rb"))
+                Database._open_files[func.__qualname__] = pickle.load(open(file_path, "rb"))
             except FileNotFoundError:
-                Database._open_files[func.__name__] = dict()
-        func_dict = Database._open_files[func.__name__]
+                Database._open_files[func.__qualname__] = dict()
+        func_dict = Database._open_files[func.__qualname__]
         if params not in func_dict:
             temp = func(*params)
             if isinstance(temp, collections.Iterable):
@@ -32,10 +32,15 @@ class Database(object):
 
     @staticmethod
     def save_files():
-        print("saving")
         for func in Database._open_files:
             file_path = Database._db_files_root + func + Database._db_files_extension
             pickle.dump(Database._open_files[func], open(file_path, "wb"))
+
+
+def cache(func):
+    def inner(*args):
+        return Database.get(func, *args)
+    return inner
 
 
 class Utils(object):
@@ -48,7 +53,7 @@ class Utils(object):
         :param alloc2:
         :return:
         """
-        return [[j for j in map(lambda x, y: (x, y), alloc1, i)] for i in Database.get(itertools.permutations, alloc2)]
+        return [[j for j in map(lambda x, y: (x, y), alloc1, i)] for i in itertools.permutations(alloc2)]
 
 
 class Agent(object):
@@ -169,6 +174,7 @@ class Agent(object):
         return self.rank(good1) < self.rank(good2)
 
     @staticmethod
+    @cache
     def _is_ordinally_less(agent, alloc1, alloc2=None):
         injections = Utils.get_possible_injections(alloc1, alloc2)
         ordinally_less = False
@@ -193,7 +199,7 @@ class Agent(object):
             alloc2 = tuple([good for good in self.preferences if good not in alloc1])
         if not isinstance(alloc1, tuple):
             alloc1 = tuple(alloc1)
-        return Database.get(Agent._is_ordinally_less, self, alloc1, alloc2)
+        return Agent._is_ordinally_less(self, alloc1, alloc2)
 
     def borda(self, goods, N=None):
         """

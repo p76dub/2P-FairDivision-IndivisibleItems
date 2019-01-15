@@ -1,6 +1,8 @@
 from fairdiv import *
 
+
 if __name__ == "__main__":
+    # Should be an even number at least equal to 10
     number_of_goods = 20
 
     goods = [Good(str(i)) for i in range(number_of_goods)]
@@ -27,8 +29,8 @@ if __name__ == "__main__":
     assert a1.rank(a1.top()) == 1
     assert a2.rank(a1.top()) == number_of_goods
 
-    assert a1.h(even_goods, 10) == [goods[i] for i in range(number_of_goods) if i % 2 == 0 and i < 10]
-    assert a2.h(even_goods, 10) == [goods[i] for i in reversed(range(number_of_goods)) if i % 2 == 0 and i >= 10]
+    assert a1.h(even_goods, number_of_goods//2) == [goods[i] for i in range(number_of_goods) if i % 2 == 0 and i < number_of_goods//2]
+    assert a2.h(even_goods, number_of_goods//2) == [goods[i] for i in reversed(range(number_of_goods)) if i % 2 == 0 and i >= number_of_goods//2]
 
     assert max_min_rank([a1, a2], goods) == number_of_goods//2
 

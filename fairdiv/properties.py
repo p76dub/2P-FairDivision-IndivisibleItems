@@ -80,3 +80,16 @@ def is_borda_pareto(X, A, M):
             return False
 
     return True
+
+
+def is_maximal_borda_sum(X, A, M):
+    """
+    Test if an allocation X is maximal-Borda-sum given agents m and all available allocations
+    :param X: allocation to test
+    :param A: all available allocations for the current problem
+    :param M: the agents
+    :return: True if X is maximal Borda sum
+    """
+    return sum([M[i].borda(X[i]) for i in range(len(M))]) == max(
+        [sum([M[i].borda(Y[i]) for i in range(len(M))]) for Y in A]
+    )

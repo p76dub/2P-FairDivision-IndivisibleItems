@@ -178,30 +178,6 @@ class Good(object):
     def __hash__(self):
         return self.name.__hash__()
 
-    @staticmethod
-    @mem_cache
-    def generate_all_allocations(goods):
-        """
-        Generate all possible allocations. I think it should generate all different permutations
-        :param goods: all considered goods
-        :return: allocation for 2 agents
-        """
-        # Generate allocations for one agent
-        allocs = list(itertools.combinations(goods, len(goods) // 2))
-
-        # Generate all permutations
-        p_allocs = []
-        for alloc in allocs:
-            p_allocs.extend(itertools.permutations(alloc))
-
-        c_allocs = []
-        for alloc in p_allocs:
-            other = [g for g in goods if g not in alloc]
-            perms = itertools.permutations(other)
-            for perm in perms:
-                c_allocs.append((tuple(alloc), tuple(perm)))
-        return c_allocs
-
 
 class Agent(object):
     """
@@ -402,8 +378,15 @@ class Allocation(object):
     def __repr__(self):
         return (self.a1, self.g1, self.a2, self.g2).__repr__()
 
-    def __str(self):
+    def __str__(self):
         return (self.a1, self.g1, self.a2, self.g2).__str__()
+
+    def __getitem__(self, item):
+        if item == 0:
+            return self.g1
+        if item == 1:
+            return self.g2
+        return None
 
     @staticmethod
     def generate_all_allocations(agents, goods):
@@ -427,6 +410,3 @@ def max_min_rank(agents, goods):
         if k <= best_rank:
             k = best_rank
     return k
-
-
-itertools.permutations = mem_cache(itertools.permutations)

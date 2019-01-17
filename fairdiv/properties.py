@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import functools
 
 
 def is_pareto(alloc, allocs, agents):
@@ -113,6 +114,21 @@ def is_borda_max_min(X, A, M):
     :param M: agents
     :return: True if allocation is Borda max-min, else False
     """
-    left = min([M[i].borda(M[i]) for i in range(len(M))])
+    left = min([M[i].borda(X[i]) for i in range(len(M))])
     right = max([min([M[i].borda(Y[i]) for i in range(len(M))]) for Y in A])
+    return left == right
+
+
+def is_borda_nash(X, A, M):
+    """
+    Test if an allocation is Borda Nash.
+    :param X: allocation
+    :param A: all available allocations
+    :param M: agents
+    :return: True if allocation is Borda-Nash, else False
+    """
+    left = functools.reduce(lambda a, b: a * b, [M[i].borda(X[i]) for i in range(len(M))])
+    right = max(
+        [functools.reduce(lambda a, b: a * b, [M[i].borda(Y[i]) for i in range(len(M))]) for Y in A]
+    )
     return left == right

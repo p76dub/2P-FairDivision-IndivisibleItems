@@ -9,6 +9,7 @@ class Database(object):
     _db_files_root = "resources/database/"
     _db_files_extension = ".db"
     _open_files = dict()
+    _mem_cache = dict()
     _is_at_exit_set = False
 
     @staticmethod
@@ -37,10 +38,26 @@ class Database(object):
             file_path = Database._db_files_root + func + Database._db_files_extension
             pickle.dump(Database._open_files[func], open(file_path, "wb"))
 
+    @staticmethod
+    def get_mem(func, params):
+        if func.__qualname__ not in Database._mem_cache:
+            Database._mem_cache[func.__qualname__] = dict()
+        if params not in Database._mem_cache[func.__qualname__]:
+            Database._mem_cache[func.__qualname__][params] = func(params)
+        else:
+            print("I avoided computing")
+        return Database._mem_cache[func.__qualname__][params]
+
 
 def cache(func):
     def inner(*args):
         return Database.get(func, *args)
+    return inner
+
+
+def mem_cache(func):
+    def inner(*args):
+        return Database.get_mem(func, *args)
     return inner
 
 

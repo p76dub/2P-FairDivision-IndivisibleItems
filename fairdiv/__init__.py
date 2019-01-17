@@ -3,6 +3,7 @@ import collections
 import itertools
 import pickle
 import atexit
+from functools import total_ordering
 
 
 class Database(object):
@@ -146,6 +147,62 @@ class Utils(object):
         return [[j for j in map(lambda x, y: (x, y), alloc1, i)] for i in itertools.permutations(alloc2)]
 
 
+@total_ordering
+class Good(object):
+    """
+    A good (also called item) which is indivisible.
+    """
+
+    def __init__(self, name=''):
+        """
+        :param name:
+        :type name: str
+        """
+        self.name = name
+
+    def __str__(self):
+        return str(self.name)
+
+    def __repr__(self):
+        return self.__str__()
+
+    def __eq__(self, other):
+        return (
+            type(self) == type(other)
+            and self.name == other.name
+        )
+
+    def __lt__(self, other):
+        return self.name.__lt__(other.name)
+
+    def __hash__(self):
+        return self.name.__hash__()
+
+    @staticmethod
+    @mem_cache
+    def generate_all_allocations(goods):
+        """
+        Generate all possible allocations. I think it should generate all different permutations
+        :param goods: all considered goods
+        :return: allocation for 2 agents
+        """
+        # Generate allocations for one agent
+        allocs = list(itertools.combinations(goods, len(goods) // 2))
+
+        # Generate all permutations
+        p_allocs = []
+        for alloc in allocs:
+            p_allocs.extend(itertools.permutations(alloc))
+
+        c_allocs = []
+        for alloc in p_allocs:
+            other = [g for g in goods if g not in alloc]
+            perms = itertools.permutations(other)
+            for perm in perms:
+                c_allocs.append((tuple(alloc), tuple(perm)))
+        return c_allocs
+
+
 class Agent(object):
     """
     An agent with a name & ordinal preferences over goods.
@@ -256,6 +313,7 @@ class Agent(object):
         """
         return the rank of a good for the agent
         :param good: a good
+        :type good: Good
         :return: the good's rank
         """
         return self._pref.index(good)+1
@@ -277,7 +335,7 @@ class Agent(object):
         ordinally_less = False
         for injection in injections:
             ordinally_less = True
-            for (x,y) in injection:
+            for (x, y) in injection:
                 if not agent.compare_goods(y, x):
                     ordinally_less = False
                     break
@@ -315,52 +373,42 @@ class Agent(object):
         return _sum
 
 
-class Good(object):
-    """
-    A good (also called item) which is indivisible.
-    """
+class Allocation(object):
 
-    def __init__(self, name=''):
-        self.name = name
-
-    def __str__(self):
-        return str(self.name)
-
-    def __repr__(self):
-        return self.__str__()
+    def __init__(self, agent1, goods1, agent2, goods2):
+        """
+        :param agent1:
+        :type agent1: Agent
+        :param goods1:
+        :type goods1: collections.Iterable
+        :param agent2:
+        :type agent2: Agent
+        :param goods2: collections.Iterable
+        """
+        self.a1 = agent1
+        self.g1 = tuple(sorted(goods1))
+        self.a2 = agent2
+        self.g2 = tuple(sorted(goods2))
 
     def __eq__(self, other):
-        return (
-            type(self) == type(other)
-            and self.name == other.name
-        )
+        if not isinstance(other, Allocation):
+            return False
+        else:
+            return other.a1 == self.a1 and other.a2 == self.a2 and other.g1 == self.g1 and other.g2 == self.g2
 
     def __hash__(self):
-        return self.name.__hash__()
+        return (self.a1, self.g1, self.a2, self.g2).__hash__()
+
+    def __repr__(self):
+        return (self.a1, self.g1, self.a2, self.g2).__repr__()
+
+    def __str(self):
+        return (self.a1, self.g1, self.a2, self.g2).__str__()
 
     @staticmethod
-    @mem_cache
-    def generate_all_allocations(goods):
-        """
-        Generate all possible allocations. I think it should generate all different permutations
-        :param goods: all considered goods
-        :return: allocation for 2 agents
-        """
-        # Generate allocations for one agent
-        allocs = list(itertools.combinations(goods, len(goods) // 2))
-
-        # Generate all permutations
-        p_allocs = []
-        for alloc in allocs:
-            p_allocs.extend(itertools.permutations(alloc))
-
-        c_allocs = []
-        for alloc in p_allocs:
-            other = [g for g in goods if g not in alloc]
-            perms = itertools.permutations(other)
-            for perm in perms:
-                c_allocs.append((tuple(alloc), tuple(perm)))
-        return c_allocs
+    def generate_all_allocations(agents, goods):
+        return set([Allocation(agents[0], g1, agents[1], [good for good in goods if good not in g1])
+                    for g1 in itertools.combinations(goods, len(goods)//2)])
 
 
 def max_min_rank(agents, goods):

@@ -6,6 +6,12 @@ import atexit
 
 
 class Database(object):
+    """
+    This class provides caches for functions.
+    Instead of re-computing the result of a function, just store it in one of the caches & retrieve it later.
+    The two provided caches are memory cache & file cache.
+    Basically the later is persistent across executions while the former is not.
+    """
     _db_files_root = "resources/database/"
     _db_files_extension = ".db"
     _open_files = dict()
@@ -13,60 +19,126 @@ class Database(object):
     _is_at_exit_set = False
 
     @staticmethod
-    def get(func, *params):
+    def get_from_file(func, *args):
+        """
+        This method implements the file cache.
+        Checks if a function's result for the given arguments is already present in the cache. If so, it's returned.
+        If the result is not already in the cache, it's computed & added to it.
+        :param func: The function whose result is desired
+        :param args: The arguments to pass to the function.
+        :return: The result of applying the function to the given arguments
+        """
+        # Check if the file is already loaded
         if func.__qualname__ not in Database._open_files:
+            # If not, we try to load it.
+
+            # We make sure that the file will be re-written into disk when the program finishes
             if not Database._is_at_exit_set:
                 atexit.register(Database.save_files)
                 Database._is_at_exit_set = True
-            file_path = Database._db_files_root + func.__qualname__ + Database._db_files_extension
             try:
-                Database._open_files[func.__qualname__] = pickle.load(open(file_path, "rb"))
+                Database._open_files[func.__qualname__] = pickle.load(open(Database.get_file_path(func), "rb"))
             except FileNotFoundError:
+                # If the file doesn't exist, we initialize an empty dictionary for it
                 Database._open_files[func.__qualname__] = dict()
         func_dict = Database._open_files[func.__qualname__]
-        if params not in func_dict:
-            temp = func(*params)
+        # We retrieve the key for the args in the function dictionary
+        args_key = Database.get_args_key(args)
+        if args_key not in func_dict:
+            # If the functions's result with the given params wasn't already computed
+            temp = func(*args)
             if isinstance(temp, collections.Iterable):
                 temp = list(temp)
-            func_dict[params] = temp
-        return func_dict[params]
+            func_dict[args_key] = temp
+        # Return the result
+        return func_dict[args_key]
 
     @staticmethod
     def save_files():
-        print("I'm saving")
+        """
+        Saves the files that are loaded in memory (& so may have changed) into disk
+        """
         for func in Database._open_files:
-            file_path = Database._db_files_root + func + Database._db_files_extension
-            pickle.dump(Database._open_files[func], open(file_path, "wb"))
+            pickle.dump(Database._open_files[func], open(Database.get_file_path(func), "wb"))
 
     @staticmethod
-    def get_mem(func, params):
+    def get_mem(func, *args):
+        """
+        This method implements the memory cache
+        Checks if a function's result for the given arguments is already present in the cache. If so, it's returned.
+        If the result is not already in the cache, it's computed & added to it.
+        :param func: The function whose result is desired
+        :param args: The arguments to pass to the function
+        :return: The result of applying the function to the given arguments
+        """
         if func.__qualname__ not in Database._mem_cache:
             Database._mem_cache[func.__qualname__] = dict()
-        if params not in Database._mem_cache[func.__qualname__]:
-            Database._mem_cache[func.__qualname__][params] = func(params)
-        else:
-            print("I avoided computing")
-        return Database._mem_cache[func.__qualname__][params]
+        args_key = Database.get_args_key(args)
+        if args_key not in Database._mem_cache[func.__qualname__]:
+            temp = func(*args)
+            if isinstance(temp, collections.Iterable):
+                temp = list(temp)
+            Database._mem_cache[func.__qualname__][args_key] = temp
+        return Database._mem_cache[func.__qualname__][args_key]
+
+    @staticmethod
+    def get_file_path(func):
+        """
+        :param func: A function object or its qualname
+        :return: Retrieves the file path of the cache of a function
+        """
+        if not isinstance(func, str):
+            func = func.__qualname__
+        return Database._db_files_root + func + Database._db_files_extension
+
+    @staticmethod
+    def get_args_key(args):
+        """
+        :param args: an object representing the arguments to be passed to a function
+        :return:
+        """
+        # Since lists are not hashable,
+        # We make sure to convert them to tuples, (& also their contents)
+        if isinstance(args, collections.Iterable):
+            args = tuple([Database.get_args_key(arg) for arg in args])
+        return args
 
 
 def cache(func):
+    """
+    This function wraps another one with the file cache.
+    It can be used as a decorator so there won't be any need to call it explicitly.
+    :param func: The function to wrap
+    :return: The given function wrapped with the file cache
+    """
     def inner(*args):
-        return Database.get(func, *args)
+        return Database.get_from_file(func, *args)
     return inner
 
 
 def mem_cache(func):
+    """
+    This function wraps another one with the memory cache.
+    It can be used as a decorator so there won't be any need to call it explicitly.
+    :param func: The function to wrap
+    :return: The given function wrapped with the memory cache
+    """
     def inner(*args):
         return Database.get_mem(func, *args)
     return inner
 
 
 class Utils(object):
+    """
+    Groups some utility methods
+    """
 
     @staticmethod
+    @mem_cache
     def get_possible_injections(alloc1, alloc2):
         """
-        Returns a list of possible mappings from alloc1 to alloc2
+        Returns a list of possible mappings from alloc1 to alloc2.
+        Note that this method's results are stored in the memory cache.
         :param alloc1:
         :param alloc2:
         :return:
@@ -193,7 +265,14 @@ class Agent(object):
 
     @staticmethod
     @cache
-    def _is_ordinally_less(agent, alloc1, alloc2=None):
+    def _is_ordinally_less(agent, alloc1, alloc2):
+        """
+        Checks if :param:`alloc1` is ordinally less than :param:`alloc2` for agent :param:`agent`
+        :param agent:
+        :param alloc1: An allocation
+        :param alloc2: An allocation
+        :return: True if :param:`alloc1` is ordinally less :param:`alloc2`for agent :param:`agent`
+        """
         injections = Utils.get_possible_injections(alloc1, alloc2)
         ordinally_less = False
         for injection in injections:
@@ -260,6 +339,7 @@ class Good(object):
         return self.name.__hash__()
 
     @staticmethod
+    @mem_cache
     def generate_all_allocations(goods):
         """
         Generate all possible allocations. I think it should generate all different permutations
@@ -280,11 +360,15 @@ class Good(object):
             perms = itertools.permutations(other)
             for perm in perms:
                 c_allocs.append((tuple(alloc), tuple(perm)))
-
         return c_allocs
 
 
 def max_min_rank(agents, goods):
+    """
+    :param agents: The agents
+    :param goods: The goods
+    :return: Computes the max_min_rank of a problem as defined in the article
+    """
     k = 0
     for good in goods:
         best_rank = len(goods)
@@ -295,3 +379,6 @@ def max_min_rank(agents, goods):
         if k <= best_rank:
             k = best_rank
     return k
+
+
+itertools.permutations = mem_cache(itertools.permutations)

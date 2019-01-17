@@ -32,6 +32,7 @@ class Database(object):
 
     @staticmethod
     def save_files():
+        print("I'm saving")
         for func in Database._open_files:
             file_path = Database._db_files_root + func + Database._db_files_extension
             pickle.dump(Database._open_files[func], open(file_path, "wb"))
@@ -248,8 +249,22 @@ class Good(object):
         :param goods: all considered goods
         :return: allocation for 2 agents
         """
+        # Generate allocations for one agent
         allocs = list(itertools.combinations(goods, len(goods) // 2))
-        return [(tuple(alloc), tuple([g for g in goods if g not in alloc])) for alloc in allocs]
+
+        # Generate all permutations
+        p_allocs = []
+        for alloc in allocs:
+            p_allocs.extend(itertools.permutations(alloc))
+
+        c_allocs = []
+        for alloc in p_allocs:
+            other = [g for g in goods if g not in alloc]
+            perms = itertools.permutations(other)
+            for perm in perms:
+                c_allocs.append((tuple(alloc), tuple(perm)))
+
+        return c_allocs
 
 
 def max_min_rank(agents, goods):

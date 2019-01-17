@@ -393,6 +393,21 @@ class Allocation(object):
         return set([Allocation(agents[0], g1, agents[1], [good for good in goods if good not in g1])
                     for g1 in itertools.combinations(goods, len(goods)//2)])
 
+    @staticmethod
+    def get_allocations(agents, allocations):
+        """
+        Retrieves a set of Allocation objects from allocations represented by iterables
+        :param agents: The agents
+        :type agents: list|tuple
+        :param allocations: The allocations represented by iterables like [(0, 1), (2, 3)]
+        :type allocations: collections.Iterable
+        :return: A set of Allocation objects
+        """
+        result = set()
+        for allocation in allocations:
+            result.add(Allocation(agents[0], allocation[0], agents[1], allocation[1]))
+        return result
+
 
 def max_min_rank(agents, goods):
     """

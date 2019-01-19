@@ -1,7 +1,19 @@
 from fairdiv import *
 
 
+@mem_cache(cache_size=10)
+def cacheTest(x):
+    return x*x
+
+
 if __name__ == "__main__":
+
+    args = range(1000)
+    for i in args:
+        cache_content = set([(args[i-j], ) for j in range(10) if i-j>=0])
+        cacheTest(i)
+        actual_cache_content = set(key for key in Database._mem_cache['cacheTest'])
+        assert actual_cache_content == cache_content
     for j in range(9):
         number_of_goods = (j+1) * 2
 

@@ -17,6 +17,8 @@ class Database(object):
     _db_files_extension = ".db"
     _open_files = dict()
     _mem_cache = dict()
+    _mem_cache_sizes = dict()
+    _mem_cache_accesses = dict()
     _is_at_exit_set = False
 
     @staticmethod
@@ -63,7 +65,7 @@ class Database(object):
             pickle.dump(Database._open_files[func], open(Database.get_file_path(func), "wb"))
 
     @staticmethod
-    def get_mem(func, *args):
+    def get_mem(func, *args, cache_size = 1000):
         """
         This method implements the memory cache
         Checks if a function's result for the given arguments is already present in the cache. If so, it's returned.
@@ -74,12 +76,19 @@ class Database(object):
         """
         if func.__qualname__ not in Database._mem_cache:
             Database._mem_cache[func.__qualname__] = dict()
+            Database._mem_cache_accesses[func.__qualname__] = []
+        Database._mem_cache_sizes[func.__qualname__] = cache_size
         args_key = Database.get_args_key(args)
         if args_key not in Database._mem_cache[func.__qualname__]:
             temp = func(*args)
             if isinstance(temp, collections.Iterable):
                 temp = list(temp)
             Database._mem_cache[func.__qualname__][args_key] = temp
+            if len(Database._mem_cache[func.__qualname__]) > Database._mem_cache_sizes[func.__qualname__]:
+                del(Database._mem_cache[func.__qualname__][Database._mem_cache_accesses[func.__qualname__].pop(0)])
+            if args_key in Database._mem_cache_accesses[func.__qualname__]:
+                Database._mem_cache_accesses[func.__qualname__].remove(args_key)
+            Database._mem_cache_accesses[func.__qualname__].append(args_key)
         return Database._mem_cache[func.__qualname__][args_key]
 
     @staticmethod
@@ -117,17 +126,29 @@ def cache(func):
     return inner
 
 
-def mem_cache(func):
-    """
+class mem_cache(object):
+    def __init__(self,cache_size):
+        self.cache_size = cache_size
+
+    def __call__(self, original_func):
+        decorator_self = self
+
+        def wrappee(*args):
+            return Database.get_mem(original_func, *args, cache_size=decorator_self.cache_size)
+        return wrappee
+
+"""
+def mem_cache(cache_size, func):
+    
     This function wraps another one with the memory cache.
     It can be used as a decorator so there won't be any need to call it explicitly.
     :param func: The function to wrap
     :return: The given function wrapped with the memory cache
-    """
+    
     def inner(*args):
-        return Database.get_mem(func, *args)
+        return Database.get_mem(func, *args, cache_size=cache_size)
     return inner
-
+"""
 
 class Utils(object):
     """
@@ -135,7 +156,7 @@ class Utils(object):
     """
 
     @staticmethod
-    @mem_cache
+    @mem_cache(cache_size=1000)
     def get_possible_injections(alloc1, alloc2):
         """
         Returns a list of possible mappings from alloc1 to alloc2.

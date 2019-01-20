@@ -2,7 +2,7 @@
 import itertools
 
 from properties import is_pareto, is_envy_free, is_max_min
-from fairdiv import Agent, Good, max_min_rank
+from fairdiv import *
 
 
 def original_sequential(agents, goods):
@@ -49,7 +49,7 @@ def original_sequential(agents, goods):
             inner(z, u, l+1)
 
     inner(([], []), goods, 1)
-    return allocations
+    return Allocation.get_allocations(agents, allocations)
 
 
 def restricted_sequential(agents, goods):
@@ -101,7 +101,7 @@ def restricted_sequential(agents, goods):
                 inner((za, zb), v, l + 1)
 
     inner(([], []), goods, 1)
-    return allocations
+    return Allocation.get_allocations(agents, allocations)
 
 
 def singles_doubles(agents, goods):
@@ -163,7 +163,7 @@ def singles_doubles(agents, goods):
             inner((za, zb), v)
 
     inner((za, zb), u)
-    return allocations
+    return Allocation.get_allocations(agents, allocations)
 
 
 def bottom_up(agents, goods):
@@ -213,30 +213,6 @@ def trump_algorithm(agents, goods):
     return [r for r in (r1, r2) if r is not None]
 
 
-def generate_all_allocations(goods):
-    """
-    Generate all possible allocations. I think it should generate all different permutations
-    :param goods: all considered goods
-    :return: allocation for 2 agents
-    """
-    # Generate allocations for one agent
-    allocs = list(itertools.combinations(goods, len(goods) // 2))
-
-    # Generate all permutations
-    p_allocs = []
-    for alloc in allocs:
-        p_allocs.extend(itertools.permutations(alloc))
-
-    c_allocs = []
-    for alloc in p_allocs:
-        other = [g for g in goods if g not in alloc]
-        perms = itertools.permutations(other)
-        for perm in perms:
-            c_allocs.append((tuple(alloc), tuple(perm)))
-
-    return c_allocs
-
-
 if __name__ == '__main__':
     import statistics
 
@@ -256,6 +232,6 @@ if __name__ == '__main__':
     # allocs = original_sequential((a1, a2), goods)
     allocs = trump_algorithm((a1, a2), goods)
     # allocs = bottom_up((a1, a2), goods)
-    all_allocs = generate_all_allocations(goods)
+    all_allocs = Allocation.generate_all_allocations((a1, a2), goods)
 
     statistics.print_statistics(statistics.gather_data((a1, a2), allocs, all_allocs))

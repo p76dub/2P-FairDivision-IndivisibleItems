@@ -3,57 +3,201 @@ import collections
 import itertools
 import pickle
 import atexit
+from functools import total_ordering
 
 
 class Database(object):
+    """
+    This class provides caches for functions.
+    Instead of re-computing the result of a function, just store it in one of the caches & retrieve it later.
+    The two provided caches are memory cache & file cache.
+    Basically the later is persistent across executions while the former is not.
+    """
     _db_files_root = "resources/database/"
     _db_files_extension = ".db"
     _open_files = dict()
+    _mem_cache = dict()
+    _mem_cache_sizes = dict()
+    _mem_cache_accesses = dict()
     _is_at_exit_set = False
 
     @staticmethod
-    def get(func, *params):
+    def get_from_file(func, *args):
+        """
+        This method implements the file cache.
+        Checks if a function's result for the given arguments is already present in the cache. If so, it's returned.
+        If the result is not already in the cache, it's computed & added to it.
+        :param func: The function whose result is desired
+        :param args: The arguments to pass to the function.
+        :return: The result of applying the function to the given arguments
+        """
+        # Check if the file is already loaded
         if func.__qualname__ not in Database._open_files:
+            # If not, we try to load it.
+
+            # We make sure that the file will be re-written into disk when the program finishes
             if not Database._is_at_exit_set:
                 atexit.register(Database.save_files)
                 Database._is_at_exit_set = True
-            file_path = Database._db_files_root + func.__qualname__ + Database._db_files_extension
             try:
-                Database._open_files[func.__qualname__] = pickle.load(open(file_path, "rb"))
+                Database._open_files[func.__qualname__] = pickle.load(open(Database.get_file_path(func), "rb"))
             except FileNotFoundError:
+                # If the file doesn't exist, we initialize an empty dictionary for it
                 Database._open_files[func.__qualname__] = dict()
         func_dict = Database._open_files[func.__qualname__]
-        if params not in func_dict:
-            temp = func(*params)
+        # We retrieve the key for the args in the function dictionary
+        args_key = Database.get_args_key(args)
+        if args_key not in func_dict:
+            # If the functions's result with the given params wasn't already computed
+            temp = func(*args)
             if isinstance(temp, collections.Iterable):
                 temp = list(temp)
-            func_dict[params] = temp
-        return func_dict[params]
+            func_dict[args_key] = temp
+        # Return the result
+        return func_dict[args_key]
 
     @staticmethod
     def save_files():
+        """
+        Saves the files that are loaded in memory (& so may have changed) into disk
+        """
         for func in Database._open_files:
-            file_path = Database._db_files_root + func + Database._db_files_extension
-            pickle.dump(Database._open_files[func], open(file_path, "wb"))
+            pickle.dump(Database._open_files[func], open(Database.get_file_path(func), "wb"))
+
+    @staticmethod
+    def get_mem(func, *args, cache_size = 1000):
+        """
+        This method implements the memory cache
+        Checks if a function's result for the given arguments is already present in the cache. If so, it's returned.
+        If the result is not already in the cache, it's computed & added to it.
+        :param func: The function whose result is desired
+        :param args: The arguments to pass to the function
+        :return: The result of applying the function to the given arguments
+        """
+        if func.__qualname__ not in Database._mem_cache:
+            Database._mem_cache[func.__qualname__] = dict()
+            Database._mem_cache_accesses[func.__qualname__] = []
+        Database._mem_cache_sizes[func.__qualname__] = cache_size
+        args_key = Database.get_args_key(args)
+        if args_key not in Database._mem_cache[func.__qualname__]:
+            temp = func(*args)
+            if isinstance(temp, collections.Iterable):
+                temp = list(temp)
+            Database._mem_cache[func.__qualname__][args_key] = temp
+            if len(Database._mem_cache[func.__qualname__]) > Database._mem_cache_sizes[func.__qualname__]:
+                del(Database._mem_cache[func.__qualname__][Database._mem_cache_accesses[func.__qualname__].pop(0)])
+            if args_key in Database._mem_cache_accesses[func.__qualname__]:
+                Database._mem_cache_accesses[func.__qualname__].remove(args_key)
+            Database._mem_cache_accesses[func.__qualname__].append(args_key)
+        return Database._mem_cache[func.__qualname__][args_key]
+
+    @staticmethod
+    def get_file_path(func):
+        """
+        :param func: A function object or its qualname
+        :return: Retrieves the file path of the cache of a function
+        """
+        if not isinstance(func, str):
+            func = func.__qualname__
+        return Database._db_files_root + func + Database._db_files_extension
+
+    @staticmethod
+    def get_args_key(args):
+        """
+        :param args: an object representing the arguments to be passed to a function
+        :return:
+        """
+        # Since lists are not hashable,
+        # We make sure to convert them to tuples, (& also their contents)
+        if isinstance(args, collections.Iterable):
+            args = tuple([Database.get_args_key(arg) for arg in args])
+        return args
 
 
 def cache(func):
+    """
+    This function wraps another one with the file cache.
+    It can be used as a decorator so there won't be any need to call it explicitly.
+    :param func: The function to wrap
+    :return: The given function wrapped with the file cache
+    """
     def inner(*args):
-        return Database.get(func, *args)
+        return Database.get_from_file(func, *args)
     return inner
 
 
+class mem_cache(object):
+    def __init__(self,cache_size):
+        self.cache_size = cache_size
+
+    def __call__(self, original_func):
+        decorator_self = self
+
+        def wrappee(*args):
+            return Database.get_mem(original_func, *args, cache_size=decorator_self.cache_size)
+        return wrappee
+
+"""
+def mem_cache(cache_size, func):
+    
+    This function wraps another one with the memory cache.
+    It can be used as a decorator so there won't be any need to call it explicitly.
+    :param func: The function to wrap
+    :return: The given function wrapped with the memory cache
+    
+    def inner(*args):
+        return Database.get_mem(func, *args, cache_size=cache_size)
+    return inner
+"""
+
 class Utils(object):
+    """
+    Groups some utility methods
+    """
 
     @staticmethod
+    @mem_cache(cache_size=1000)
     def get_possible_injections(alloc1, alloc2):
         """
-        Returns a list of possible mappings from alloc1 to alloc2
+        Returns a list of possible mappings from alloc1 to alloc2.
+        Note that this method's results are stored in the memory cache.
         :param alloc1:
         :param alloc2:
         :return:
         """
         return [[j for j in map(lambda x, y: (x, y), alloc1, i)] for i in itertools.permutations(alloc2)]
+
+
+@total_ordering
+class Good(object):
+    """
+    A good (also called item) which is indivisible.
+    """
+
+    def __init__(self, name=''):
+        """
+        :param name:
+        :type name: str
+        """
+        self.name = name
+
+    def __str__(self):
+        return str(self.name)
+
+    def __repr__(self):
+        return self.__str__()
+
+    def __eq__(self, other):
+        return (
+            type(self) == type(other)
+            and self.name == other.name
+        )
+
+    def __lt__(self, other):
+        return self.name.__lt__(other.name)
+
+    def __hash__(self):
+        return self.name.__hash__()
 
 
 class Agent(object):
@@ -166,6 +310,7 @@ class Agent(object):
         """
         return the rank of a good for the agent
         :param good: a good
+        :type good: Good
         :return: the good's rank
         """
         return self._pref.index(good)+1
@@ -175,12 +320,19 @@ class Agent(object):
 
     @staticmethod
     @cache
-    def _is_ordinally_less(agent, alloc1, alloc2=None):
+    def _is_ordinally_less(agent, alloc1, alloc2):
+        """
+        Checks if :param:`alloc1` is ordinally less than :param:`alloc2` for agent :param:`agent`
+        :param agent:
+        :param alloc1: An allocation
+        :param alloc2: An allocation
+        :return: True if :param:`alloc1` is ordinally less :param:`alloc2`for agent :param:`agent`
+        """
         injections = Utils.get_possible_injections(alloc1, alloc2)
         ordinally_less = False
         for injection in injections:
             ordinally_less = True
-            for (x,y) in injection:
+            for (x, y) in injection:
                 if not agent.compare_goods(y, x):
                     ordinally_less = False
                     break
@@ -218,41 +370,72 @@ class Agent(object):
         return _sum
 
 
-class Good(object):
-    """
-    A good (also called item) which is indivisible.
-    """
+class Allocation(object):
 
-    def __init__(self, name=''):
-        self.name = name
-
-    def __str__(self):
-        return str(self.name)
-
-    def __repr__(self):
-        return self.__str__()
+    def __init__(self, agent1, goods1, agent2, goods2):
+        """
+        :param agent1:
+        :type agent1: Agent
+        :param goods1:
+        :type goods1: collections.Iterable
+        :param agent2:
+        :type agent2: Agent
+        :param goods2: collections.Iterable
+        """
+        self.a1 = agent1
+        self.g1 = tuple(sorted(goods1))
+        self.a2 = agent2
+        self.g2 = tuple(sorted(goods2))
 
     def __eq__(self, other):
-        return (
-            type(self) == type(other)
-            and self.name == other.name
-        )
+        if not isinstance(other, Allocation):
+            return False
+        else:
+            return other.a1 == self.a1 and other.a2 == self.a2 and other.g1 == self.g1 and other.g2 == self.g2
 
     def __hash__(self):
-        return self.name.__hash__()
+        return (self.a1, self.g1, self.a2, self.g2).__hash__()
+
+    def __repr__(self):
+        return (self.a1, self.g1, self.a2, self.g2).__repr__()
+
+    def __str__(self):
+        return (self.a1, self.g1, self.a2, self.g2).__str__()
+
+    def __getitem__(self, item):
+        if item == 0:
+            return self.g1
+        if item == 1:
+            return self.g2
+        return None
 
     @staticmethod
-    def generate_all_allocations(goods):
+    def generate_all_allocations(agents, goods):
+        return set([Allocation(agents[0], g1, agents[1], [good for good in goods if good not in g1])
+                    for g1 in itertools.combinations(goods, len(goods)//2)])
+
+    @staticmethod
+    def get_allocations(agents, allocations):
         """
-        Generate all possible allocations. I think it should generate all different permutations
-        :param goods: all considered goods
-        :return: allocation for 2 agents
+        Retrieves a set of Allocation objects from allocations represented by iterables
+        :param agents: The agents
+        :type agents: list|tuple
+        :param allocations: The allocations represented by iterables like [(0, 1), (2, 3)]
+        :type allocations: collections.Iterable
+        :return: A set of Allocation objects
         """
-        allocs = list(itertools.combinations(goods, len(goods) // 2))
-        return [(tuple(alloc), tuple([g for g in goods if g not in alloc])) for alloc in allocs]
+        result = set()
+        for allocation in allocations:
+            result.add(Allocation(agents[0], allocation[0], agents[1], allocation[1]))
+        return result
 
 
 def max_min_rank(agents, goods):
+    """
+    :param agents: The agents
+    :param goods: The goods
+    :return: Computes the max_min_rank of a problem as defined in the article
+    """
     k = 0
     for good in goods:
         best_rank = len(goods)

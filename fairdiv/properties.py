@@ -121,7 +121,8 @@ def is_borda_max_min(X, A, M):
 
 def is_borda_nash(X, A, M):
     """
-    Test if an allocation is Borda Nash.
+    Test if an allocation is Borda Nash, ie M[0].borda(X[0]) * M[1].borda(X[1]) is the best among
+    other allocations.
     :param X: allocation
     :param A: all available allocations
     :param M: agents
@@ -132,3 +133,23 @@ def is_borda_nash(X, A, M):
         [functools.reduce(lambda a, b: a * b, [M[i].borda(Y[i]) for i in range(len(M))]) for Y in A]
     )
     return left == right
+
+
+def is_borda_egalitarian(X, M):
+    """
+    Test if the allocation is Borda egalitarian, meaning that M[0].borda(X[0]) >= 1/2 * M[
+    0].borda(X[0] + X[1]) and M[1].borda(X[1]) >= 1/2 * M[1].borda(X[0] + X[1])
+    :param X: allocation you want to test
+    :param M: agents
+    :return: True if allocation is Borda-Egalitarian, else False
+    """
+    # Get all goods
+    goods = []
+    for am in X:
+        goods.extend(am)
+
+    # Compute result
+    return functools.reduce(
+        lambda a, b: a and b,
+        [M[i].borda(X[i]) >= 1/2 * M[i].borda(goods) for i in range(len(M))]
+    )

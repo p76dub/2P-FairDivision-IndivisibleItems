@@ -127,28 +127,27 @@ def cache(func):
 
 
 class mem_cache(object):
+    """
+    This class is meant to be used as a decorator to make a function's result be stored in a cache in the memory.
+    """
     def __init__(self,cache_size):
+        """
+        Builds the function wrapper with a given cache size.
+        :param cache_size: The cache size
+        """
         self.cache_size = cache_size
 
     def __call__(self, original_func):
+        """
+        :param original_func: The function to wrap
+        :return: the wrapped function that passes by the cache
+        """
         decorator_self = self
 
         def wrappee(*args):
             return Database.get_mem(original_func, *args, cache_size=decorator_self.cache_size)
         return wrappee
 
-"""
-def mem_cache(cache_size, func):
-    
-    This function wraps another one with the memory cache.
-    It can be used as a decorator so there won't be any need to call it explicitly.
-    :param func: The function to wrap
-    :return: The given function wrapped with the memory cache
-    
-    def inner(*args):
-        return Database.get_mem(func, *args, cache_size=cache_size)
-    return inner
-"""
 
 class Utils(object):
     """
@@ -316,6 +315,12 @@ class Agent(object):
         return self._pref.index(good)+1
 
     def compare_goods(self, good1, good2):
+        """
+        compares two goods using the current agent's preferences.
+        :param good1: a good.
+        :param good2: a good.
+        :return: True if :param:`good1` is strictly better than :param:`good2` for the current agent.
+        """
         return self.rank(good1) < self.rank(good2)
 
     @staticmethod
@@ -410,7 +415,15 @@ class Allocation(object):
         return None
 
     @staticmethod
+    @mem_cache(cache_size=10)
     def generate_all_allocations(agents, goods):
+        '''
+        :param agents: the two agents
+        :type agents: list|tuple
+        :param goods: the goods
+        :type goods: collections.Iterable
+        :return: A set of all the possible allocations
+        '''
         return set([Allocation(agents[0], g1, agents[1], [good for good in goods if good not in g1])
                     for g1 in itertools.combinations(goods, len(goods)//2)])
 

@@ -397,10 +397,10 @@ class Allocation(object):
         return (self.a1, self.g1, self.a2, self.g2).__hash__()
 
     def __repr__(self):
-        return (self.a1, self.g1, self.a2, self.g2).__repr__()
+        return {self.a1: self.g1, self.a2: self.g2}.__repr__()
 
     def __str__(self):
-        return (self.a1, self.g1, self.a2, self.g2).__str__()
+        return self.__repr__()
 
     def __getitem__(self, item):
         if item == 0:

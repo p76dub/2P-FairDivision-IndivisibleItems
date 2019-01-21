@@ -183,7 +183,11 @@ def bottom_up(agents, goods):
         return inner((m+1) % 2, z, u)
 
     u = goods[:]
-    return inner(0, ([], []), u[:]), inner(1, ([], []), u)
+
+    return Allocation.get_allocations(agents, [
+        inner(0, ([], []), u[:]),
+        inner(1, ([], []), u)
+    ])
 
 
 def trump_algorithm(agents, goods):
@@ -210,7 +214,7 @@ def trump_algorithm(agents, goods):
     r1 = inner(agents)
     r2 = inner((agents[1], agents[0]))
     r2 = r2[1], r2[0] if r2 is not None else r2  # r2 was inverted
-    return [r for r in (r1, r2) if r is not None]
+    return Allocation.get_allocations(agents, [r for r in (r1, r2) if r is not None])
 
 
 if __name__ == '__main__':

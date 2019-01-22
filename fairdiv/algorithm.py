@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
-import itertools
-
 from properties import is_pareto, is_envy_free, is_max_min
 from fairdiv import *
+from cacheUtils import *
 
 
 @cache

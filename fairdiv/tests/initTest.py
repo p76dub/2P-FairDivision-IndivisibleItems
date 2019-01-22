@@ -15,7 +15,7 @@ if __name__ == "__main__":
         actual_cache_content = set(key for key in Database._mem_cache['cacheTest'])
         assert actual_cache_content == cache_content
 
-    for i in range(18):
+    for i in range(8):
         assert len(Utils.generate_possible_problems(i+2)) == math.factorial(i+2)
     for j in range(9):
         number_of_goods = (j+1) * 2

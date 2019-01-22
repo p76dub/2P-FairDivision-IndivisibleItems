@@ -1,5 +1,5 @@
 from fairdiv import *
-
+import math
 
 @mem_cache(cache_size=10)
 def cacheTest(x):
@@ -14,6 +14,9 @@ if __name__ == "__main__":
         cacheTest(i)
         actual_cache_content = set(key for key in Database._mem_cache['cacheTest'])
         assert actual_cache_content == cache_content
+
+    for i in range(18):
+        assert len(Utils.generate_possible_problems(i+2)) == math.factorial(i+2)
     for j in range(9):
         number_of_goods = (j+1) * 2
 

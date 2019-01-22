@@ -223,24 +223,35 @@ def trump_algorithm(agents, goods):
 
 
 if __name__ == '__main__':
-    import statistics
+    import fairdiv
+    import statistics as stats
+    import fairdiv.algorithm as algorithm
 
-    goods = [Good(str(i)) for i in range(6)]
+    # Create some constants
+    NUMBER_OF_GOODS = 8
 
-    a1 = Agent("A")
-    a1.preferences = goods[:]
+    # Create items
+    items = [fairdiv.Good(str(i + 1)) for i in range(NUMBER_OF_GOODS)]
 
-    a2 = Agent("B")
-    a2.preferences = [
-        goods[2], goods[3], goods[4], goods[5], goods[0], goods[1]
+    # Create agents. We will consider that item's number is their rank in preferences of the first
+    # agent
+    agents = [
+        fairdiv.Agent(name="A", pref=items[:]),
+        fairdiv.Agent(name="B",
+                      pref=[items[1], items[3], items[4], items[5], items[6], items[7], items[0],
+                            items[2]])
     ]
 
+    # Generate all allocations for the given problem
+    A = list(fairdiv.Allocation.generate_all_allocations(agents, items))
 
-    # allocs = singles_doubles((a1, a2), goods)
-    # allocs = original_sequential((a1, a2), goods)
-    # allocs = trump_algorithm((a1, a2), goods)
-    # allocs = bottom_up((a1, a2), goods)
-    allocs = restricted_sequential((a1, a2), goods)
-    all_allocs = Allocation.generate_all_allocations((a1, a2), goods)
+    results = {
+        "OS": algorithm.original_sequential(agents, items),
+        # "RS": algorithm.restricted_sequential(agents, items),
+        "SD": algorithm.singles_doubles(agents, items),
+        "BU": algorithm.bottom_up(agents, items),
+        "TA": algorithm.trump_algorithm(agents, items)
+    }
 
-    statistics.print_statistics(statistics.gather_data((a1, a2), allocs, all_allocs))
+    for k, v in results.items():
+        print("{}: {}".format(k, v))

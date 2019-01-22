@@ -353,7 +353,8 @@ class Agent(object):
         """
         Checks if :param:`alloc1` is ordinally less than :param:`alloc2`.
         :param alloc1: An allocation
-        :param alloc2: An allocation, If set to None, the allocation :param:`alloc1` is compared to its complementary in the set of goods.
+        :param alloc2: An allocation, If set to None, the allocation :param:`alloc1` is compared to
+                        its complementary in the set of goods.
         :return: True if :param:`alloc1` is ordinally less :param:`alloc2`
         """
         if alloc2 is None:
@@ -425,7 +426,7 @@ class Allocation(object):
         :param agents: the two agents
         :type agents: list|tuple
         :param goods: the goods
-        :type goods: collections.Iterable
+        :type goods: Sized
         :return: A set of all the possible allocations
         '''
         return set([Allocation(agents[0], g1, agents[1], [good for good in goods if good not in g1])

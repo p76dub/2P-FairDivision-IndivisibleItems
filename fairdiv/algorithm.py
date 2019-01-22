@@ -5,6 +5,7 @@ from properties import is_pareto, is_envy_free, is_max_min
 from fairdiv import *
 
 
+@cache
 def original_sequential(agents, goods):
     """
     Use the Original Sequential Algorithm to compute a fair division of provided goods.
@@ -52,6 +53,7 @@ def original_sequential(agents, goods):
     return Allocation.get_allocations(agents, allocations)
 
 
+@cache
 def restricted_sequential(agents, goods):
     """
     Uses the Restricted Sequential Algorithm to compute a fair division of provided goods.
@@ -108,7 +110,7 @@ def restricted_sequential(agents, goods):
     inner(([], []), goods, 1)
     return Allocation.get_allocations(agents, allocations)
 
-
+@cache
 def singles_doubles(agents, goods):
     """
     Uses the singles doubles algorithm to compute fair divisions of provided goods
@@ -170,7 +172,7 @@ def singles_doubles(agents, goods):
     inner((za, zb), u)
     return Allocation.get_allocations(agents, allocations)
 
-
+@cache
 def bottom_up(agents, goods):
     """
     Use the bottom-up algorithm to calculate allocations.
@@ -194,7 +196,7 @@ def bottom_up(agents, goods):
         inner(1, ([], []), u)
     ])
 
-
+@cache
 def trump_algorithm(agents, goods):
     """
     Use the Trump algorithm to compute a fair division of provided goods.
@@ -218,6 +220,8 @@ def trump_algorithm(agents, goods):
 
     r1 = inner(agents)
     r2 = inner((agents[1], agents[0]))
+    if r1 is None and r2 is None:
+        return set()
     r2 = r2[1], r2[0] if r2 is not None else r2  # r2 was inverted
     return Allocation.get_allocations(agents, [r for r in (r1, r2) if r is not None])
 

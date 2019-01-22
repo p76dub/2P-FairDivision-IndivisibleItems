@@ -1,15 +1,16 @@
 from fairdiv import *
 import time
-from multiprocessing import Pool, cpu_count, freeze_support
-import os
+from multiprocessing.pool import ThreadPool
+from multiprocessing import Pool, cpu_count
 
 if __name__ == "__main__":
-    Database.init()
-    use_pool = True
-    os.chdir(os.path.join(os.getcwd(), "../.."))
+    use_pool = False
+    process = False
     if use_pool:
-        pool = Pool(cpu_count())
-
+        if process:
+            pool = Pool(cpu_count())
+        else:
+            pool = ThreadPool(cpu_count())
     for j in range(6):
         number_of_goods = (j+1) * 2
 
@@ -40,7 +41,6 @@ if __name__ == "__main__":
             for alloc in allocs:
                 a1.is_ordinally_less(alloc[0])
                 a2.is_ordinally_less(alloc[1])
-
 
         elapsed_time = time.time() - start_time
         print(elapsed_time)

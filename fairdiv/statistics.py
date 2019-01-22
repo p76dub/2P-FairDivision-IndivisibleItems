@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import properties as prop
+from fairdiv import Allocation
 
 
 class Statistics(object):
@@ -61,6 +62,42 @@ class Statistics(object):
         return self.formatted_text()
 
 
+class Benchmark(object):
+    """
+    This class is used to benchmark the different algorithms on various problem.
+    A benchmark is defined by problems, the algorithms to run on those problems & the properties to test on the solutions
+    """
+    def __init__(self, problems, algorithms, properties):
+        """
+        Initializes a benchmark.
+        :param problems: The problems that the benchmark should be run on. Should be an iterable of tuples (agents, goods)
+        :type problems: collections.Iterable
+        :param algorithms: The algorithms to benchmark, should be an iterable of functions that accept two parameters : agents & goods.
+        :type algorithms: collections.Iterable
+        :param properties: The properties to test, a dict key -> function that will be applied to new allocations.
+        Functions must take these arguments : alloc, all_allocs, agents. Use lambda if some parameters aren't used.
+        :type properties: dict
+        """
+        self.problems = problems
+        self.algorithms = algorithms
+        self.properties = properties
+
+    def run(self):
+        """
+        Runs the benchmark
+        :return: A dictionary where the keys are the qualnames of the algorithms & the values are also dictionaries
+        problem -> statistics object
+        """
+        result = dict()
+        for algorithm in self.algorithms:
+            result[algorithm.__qualname__] = dict()
+            for problem in self.problems:
+                allocations = Allocation.generate_all_allocations(*problem)
+                result[algorithm.__qualname__][str(problem)] = Statistics(allocations, problem[0], self.properties)
+                for solution in algorithm(*problem):
+                    result[algorithm.__qualname__][str(problem)].add(solution)
+        return result
+
 
 def gather_data(agents, allocs, all_allocs, pareto=True, max_min=True, envy=True):
     # Eliminate duplicates
@@ -113,3 +150,31 @@ def print_statistics(stats):
             print_one(e)
     else:
         print_one(stats)
+
+
+if __name__ == "__main__":
+    from fairdiv import Agent, Good
+    import algorithm
+    import properties
+    goods = [Good(str(i)) for i in range(4)]
+
+    a1 = Agent("A")
+    a1.preferences = [
+        goods[0], goods[2], goods[1], goods[3]
+    ]
+
+    a2 = Agent("B")
+    a2.preferences = [
+        goods[1], goods[3], goods[0], goods[2]
+    ]
+    algorithms = [algorithm.bottom_up, algorithm.original_sequential, algorithm.restricted_sequential]
+    problems = [((a1, a2), goods)]
+    prop = [properties.is_pareto]
+
+    prop = {func.__qualname__: func for func in prop}
+
+    benchmark = Benchmark(problems, algorithms, prop)
+
+    result = benchmark.run()
+
+    print(result)

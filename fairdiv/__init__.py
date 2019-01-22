@@ -40,7 +40,8 @@ class Database(object):
                 atexit.register(Database.save_files)
                 Database._is_at_exit_set = True
             try:
-                Database._open_files[func.__qualname__] = pickle.load(open(Database.get_file_path(func), "rb"))
+                with open(Database.get_file_path(func), "rb") as f:
+                    Database._open_files[func.__qualname__] = pickle.load(f)
             except FileNotFoundError:
                 # If the file doesn't exist, we initialize an empty dictionary for it
                 Database._open_files[func.__qualname__] = dict()
@@ -64,16 +65,19 @@ class Database(object):
         Saves the files that are loaded in memory (& so may have changed) into disk
         """
         for func in Database._open_files:
-            pickle.dump(Database._open_files[func], open(Database.get_file_path(func), "wb"))
+            with open(Database.get_file_path(func), "wb") as f:
+                pickle.dump(Database._open_files[func], f)
+                f.close()
 
     @staticmethod
-    def get_mem(func, *args, cache_size = 1000):
+    def get_mem(func, *args, cache_size=1000):
         """
         This method implements the memory cache
         Checks if a function's result for the given arguments is already present in the cache. If so, it's returned.
         If the result is not already in the cache, it's computed & added to it.
         :param func: The function whose result is desired
         :param args: The arguments to pass to the function
+        :param cache_size: The size of the cache. ie, the maximum number of results to store.
         :return: The result of applying the function to the given arguments
         """
         if func.__qualname__ not in Database._mem_cache:
@@ -351,7 +355,8 @@ class Agent(object):
         """
         Checks if :param:`alloc1` is ordinally less than :param:`alloc2`.
         :param alloc1: An allocation
-        :param alloc2: An allocation, If set to None, the allocation :param:`alloc1` is compared to its complementary in the set of goods.
+        :param alloc2: An allocation, If set to None, the allocation :param:`alloc1` is compared to
+                        its complementary in the set of goods.
         :return: True if :param:`alloc1` is ordinally less :param:`alloc2`
         """
         if alloc2 is None:
@@ -423,7 +428,7 @@ class Allocation(object):
         :param agents: the two agents
         :type agents: list|tuple
         :param goods: the goods
-        :type goods: collections.Iterable
+        :type goods: Sized
         :return: A set of all the possible allocations
         '''
         return set([Allocation(agents[0], g1, agents[1], [good for good in goods if good not in g1])

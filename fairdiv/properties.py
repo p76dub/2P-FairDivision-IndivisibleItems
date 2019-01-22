@@ -3,15 +3,15 @@ import functools
 
 
 def is_pareto(alloc, allocs, agents):
-    xa = sorted([agents[0].rank(g) for g in alloc.g1])
-    xb = sorted([agents[1].rank(g) for g in alloc.g2])
+    xa = sorted([agents[0].rank(g) for g in alloc[0]])
+    xb = sorted([agents[1].rank(g) for g in alloc[1]])
 
     for x in allocs:
         if alloc == x:
             continue
 
-        ya = x.g1
-        yb = x.g2
+        ya = x[0]
+        yb = x[1]
 
         ra = sorted([agents[0].rank(i) for i in ya])
         rb = sorted([agents[1].rank(i) for i in yb])
@@ -52,11 +52,11 @@ def is_pareto(alloc, allocs, agents):
 
 
 def is_envy_free(alloc, agents):
-    xa = sorted([agents[0].preferences.index(i) for i in alloc[0]])
-    xb = sorted([agents[1].preferences.index(i) for i in alloc[1]])
+    xa = sorted([agents[0].rank(i) for i in alloc[0]])
+    xb = sorted([agents[1].rank(i) for i in alloc[1]])
 
-    ya = sorted([agents[1].preferences.index(i) for i in alloc[0]])
-    yb = sorted([agents[0].preferences.index(i) for i in alloc[1]])
+    ya = sorted([agents[1].rank(i) for i in alloc[0]])
+    yb = sorted([agents[0].rank(i) for i in alloc[1]])
 
     for i in range(len(xa)):
         if xa[i] > ya[i]:  # Not sure if it is correct
@@ -70,9 +70,9 @@ def is_envy_free(alloc, agents):
 
 
 def is_max_min(X, A, M):
-    left = max([max([m.preferences.index(i) for i in X[ind]]) for ind, m in enumerate(M)])
+    left = max([max([m.rank(i) for i in X[ind]]) for ind, m in enumerate(M)])
     right = min([max(
-        [max([m.preferences.index(i) for i in Y[ind]]) for ind, m in enumerate(M)]
+        [max([m.rank(i) for i in Y[ind]]) for ind, m in enumerate(M)]
     ) for Y in A])
     return left == right
 

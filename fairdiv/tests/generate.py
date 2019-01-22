@@ -1,12 +1,15 @@
 from fairdiv import *
 import time
-from multiprocessing import Pool, cpu_count
-
+from multiprocessing import Pool, cpu_count, freeze_support
+import os
 
 if __name__ == "__main__":
-    use_pool = False
+    Database.init()
+    use_pool = True
+    os.chdir(os.path.join(os.getcwd(), "../.."))
     if use_pool:
         pool = Pool(cpu_count())
+
     for j in range(6):
         number_of_goods = (j+1) * 2
 

@@ -44,7 +44,9 @@ class Database(object):
             except FileNotFoundError:
                 # If the file doesn't exist, we initialize an empty dictionary for it
                 Database._open_files[func.__qualname__] = dict()
+
         func_dict = Database._open_files[func.__qualname__]
+
         # We retrieve the key for the args in the function dictionary
         args_key = Database.get_args_key(args)
         if args_key not in func_dict:

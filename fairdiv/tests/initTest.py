@@ -1,6 +1,7 @@
 from fairdiv import *
 import math
 
+
 @mem_cache(cache_size=10)
 def cacheTest(x):
     return x*x
@@ -17,6 +18,7 @@ if __name__ == "__main__":
 
     for i in range(8):
         assert len(Utils.generate_possible_problems(i+2)) == math.factorial(i+2)
+        Utils.generate_possible_problems(i+2, True)
     for j in range(9):
         number_of_goods = (j+1) * 2
 

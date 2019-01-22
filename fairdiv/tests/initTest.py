@@ -1,9 +1,10 @@
 from fairdiv import *
+from fairdiv.problemGenerators import generate_possible_problems
 import math
 
 
 @mem_cache(cache_size=10)
-def cacheTest(x):
+def cache_test(x):
     return x*x
 
 
@@ -12,13 +13,13 @@ if __name__ == "__main__":
     args = range(1000)
     for i in args:
         cache_content = set([(args[i-j], ) for j in range(10) if i-j>=0])
-        cacheTest(i)
-        actual_cache_content = set(key for key in Database._mem_cache['cacheTest'])
+        cache_test(i)
+        actual_cache_content = set(key for key in Database._mem_cache['cache_test'])
         assert actual_cache_content == cache_content
 
-    for i in range(8):
-        assert len(Utils.generate_possible_problems(i+2)) == math.factorial(i+2)
-        Utils.generate_possible_problems(i+2, True)
+    for i in range(7):
+        assert len(generate_possible_problems(i+2)) == math.factorial(i+2)
+        generate_possible_problems(i+2, True)
     for j in range(9):
         number_of_goods = (j+1) * 2
 

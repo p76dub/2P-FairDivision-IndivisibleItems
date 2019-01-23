@@ -62,9 +62,18 @@ class Database(object):
         Saves the files that are loaded in memory (& so may have changed) into disk
         """
         for func in Database._open_files:
-            with open(Database.get_file_path(func), "wb") as f:
-                pickle.dump(Database._open_files[func], f)
-                f.close()
+            try:
+                f = open(Database.get_file_path(func), "rb+")
+                changed = pickle.load(f)
+                if changed is not None and isinstance(changed, dict):
+                    for key in changed:
+                        if key not in Database._open_files[func]:
+                            Database._open_files[func][key] = changed[key]
+            except FileNotFoundError:
+                f = open(Database.get_file_path(func), "wb")
+            pickle.dump(Database._open_files[func], f)
+            f.close()
+        Database._open_files.clear()
 
     @staticmethod
     def get_mem(func, *args, cache_size=1000):

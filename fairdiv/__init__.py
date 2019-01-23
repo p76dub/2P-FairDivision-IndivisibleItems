@@ -3,7 +3,7 @@ import collections
 import itertools
 import pickle
 import atexit
-import algorithm
+# import algorithm
 from functools import total_ordering
 
 

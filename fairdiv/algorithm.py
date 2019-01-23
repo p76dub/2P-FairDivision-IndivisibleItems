@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 import itertools
+import fairdiv
+from properties import is_envy_free
 
-from properties import is_pareto, is_envy_free, is_max_min
-from fairdiv import *
 
-
-@cache
+@fairdiv.cache
 def original_sequential(agents, goods):
     """
     Use the Original Sequential Algorithm to compute a fair division of provided goods.
@@ -23,8 +22,8 @@ def original_sequential(agents, goods):
             allocations.add((tuple(z[0]), tuple(z[1])))
             return
 
-        ha_l = agents[0].preferences[:l]
-        hb_l = agents[1].preferences[:l]
+        ha_l = agents[0].h(u, l)
+        hb_l = agents[1].h(u, l)
         found = False
 
         for i, j in itertools.combinations(u, 2):
@@ -50,10 +49,10 @@ def original_sequential(agents, goods):
             inner(z, u, l+1)
 
     inner(([], []), goods, 1)
-    return Allocation.get_allocations(agents, allocations)
+    return fairdiv.Allocation.get_allocations(agents, allocations)
 
 
-@cache
+@fairdiv.cache
 def restricted_sequential(agents, goods):
     """
     Uses the Restricted Sequential Algorithm to compute a fair division of provided goods.
@@ -108,9 +107,9 @@ def restricted_sequential(agents, goods):
         if not branched:
             inner(z, u, l+1)
     inner(([], []), goods, 1)
-    return Allocation.get_allocations(agents, allocations)
+    return fairdiv.Allocation.get_allocations(agents, allocations)
 
-@cache
+@fairdiv.cache
 def singles_doubles(agents, goods):
     """
     Uses the singles doubles algorithm to compute fair divisions of provided goods
@@ -120,7 +119,7 @@ def singles_doubles(agents, goods):
     """
     allocations = set()
 
-    k = max_min_rank(agents, goods)
+    k = fairdiv.max_min_rank(agents, goods)
 
     ha_k = set(agents[0].h(goods, k))
     hb_k = set(agents[1].h(goods, k))
@@ -170,9 +169,9 @@ def singles_doubles(agents, goods):
             inner((za, zb), v)
 
     inner((za, zb), u)
-    return Allocation.get_allocations(agents, allocations)
+    return fairdiv.Allocation.get_allocations(agents, allocations)
 
-@cache
+@fairdiv.cache
 def bottom_up(agents, goods):
     """
     Use the bottom-up algorithm to calculate allocations.
@@ -191,12 +190,13 @@ def bottom_up(agents, goods):
 
     u = goods[:]
 
-    return Allocation.get_allocations(agents, [
+    return fairdiv.Allocation.get_allocations(agents, [
         inner(0, ([], []), u[:]),
         inner(1, ([], []), u)
     ])
 
-@cache
+
+@fairdiv.cache
 def trump_algorithm(agents, goods):
     """
     Use the Trump algorithm to compute a fair division of provided goods.
@@ -223,38 +223,37 @@ def trump_algorithm(agents, goods):
     if r1 is None and r2 is None:
         return set()
     r2 = r2[1], r2[0] if r2 is not None else r2  # r2 was inverted
-    return Allocation.get_allocations(agents, [r for r in (r1, r2) if r is not None])
+    return fairdiv.Allocation.get_allocations(agents, [r for r in (r1, r2) if r is not None])
 
 
 if __name__ == '__main__':
-    import fairdiv
-    import statistics as stats
-    import fairdiv.algorithm as algorithm
+    import os
+    os.chdir('..')
 
+    import fairdiv
     # Create some constants
     NUMBER_OF_GOODS = 8
 
     # Create items
     items = [fairdiv.Good(str(i + 1)) for i in range(NUMBER_OF_GOODS)]
 
-    # Create agents. We will consider that item's number is their rank in preferences of the first
-    # agent
+    # Create agents. We will consider that item's number is their rank in preferences of the first agent
     agents = [
         fairdiv.Agent(name="A", pref=items[:]),
         fairdiv.Agent(name="B",
-                      pref=[items[1], items[3], items[4], items[5], items[6], items[7], items[0],
-                            items[2]])
+                      pref=[items[2], items[3], items[4], items[5], items[6], items[7], items[0],
+                            items[1]])
     ]
 
     # Generate all allocations for the given problem
     A = list(fairdiv.Allocation.generate_all_allocations(agents, items))
 
     results = {
-        "OS": algorithm.original_sequential(agents, items),
-        # "RS": algorithm.restricted_sequential(agents, items),
-        "SD": algorithm.singles_doubles(agents, items),
-        "BU": algorithm.bottom_up(agents, items),
-        "TA": algorithm.trump_algorithm(agents, items)
+        "OS": original_sequential(agents, items),
+        # "RS": restricted_sequential(agents, items),
+        # "SD": singles_doubles(agents, items),
+        # "BU": bottom_up(agents, items),
+        # "TA": trump_algorithm(agents, items)
     }
 
     for k, v in results.items():

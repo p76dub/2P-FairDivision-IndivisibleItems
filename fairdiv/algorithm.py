@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from properties import is_pareto, is_envy_free, is_max_min
+from properties import is_pareto, is_envy_free_ordinally, is_max_min
 from fairdiv import *
 from cacheUtils import *
 
@@ -145,7 +145,7 @@ def singles_doubles(agents, goods):
         top_b = agents[1].top(u)
 
         sb_a = agents[0].sb(u)
-        sb_b = agents[0].sb(u)
+        sb_b = agents[1].sb(u)
 
         if top_a != top_b:
             za, zb = z[0][:], z[1][:]
@@ -154,19 +154,21 @@ def singles_doubles(agents, goods):
             zb.append(top_b)
             inner((za, zb), v)
 
-        za, zb = z[0][:], z[1][:]
-        za.append(top_a)
-        zb.append(sb_b)
-        if is_envy_free((za, zb), agents):
-            v = [good for good in u if good != top_a and good != sb_b]
-            inner((za, zb), v)
+        if top_a != sb_b:
+            za, zb = z[0][:], z[1][:]
+            za.append(top_a)
+            zb.append(sb_b)
+            if is_envy_free_ordinally((za, zb), agents):
+                v = [good for good in u if good != top_a and good != sb_b]
+                inner((za, zb), v)
 
-        za, zb = z[0][:], z[1][:]
-        za.append(sb_a)
-        zb.append(top_b)
-        if is_envy_free((za, zb), agents):
-            v = [good for good in u if good != sb_a and good != top_b]
-            inner((za, zb), v)
+        if sb_a != top_b:
+            za, zb = z[0][:], z[1][:]
+            za.append(sb_a)
+            zb.append(top_b)
+            if is_envy_free_ordinally((za, zb), agents):
+                v = [good for good in u if good != sb_a and good != top_b]
+                inner((za, zb), v)
 
     inner((za, zb), u)
     return Allocation.get_allocations(agents, allocations)
@@ -227,7 +229,6 @@ def trump_algorithm(agents, goods):
 
 if __name__ == '__main__':
     import fairdiv
-    import statistics as stats
     import fairdiv.algorithm as algorithm
 
     # Create some constants
@@ -241,8 +242,8 @@ if __name__ == '__main__':
     agents = [
         fairdiv.Agent(name="A", pref=items[:]),
         fairdiv.Agent(name="B",
-                      pref=[items[1], items[3], items[4], items[5], items[6], items[7], items[0],
-                            items[2]])
+                      pref=[items[1], items[4], items[5], items[0], items[6], items[2], items[7],
+                            items[3]])
     ]
 
     # Generate all allocations for the given problem

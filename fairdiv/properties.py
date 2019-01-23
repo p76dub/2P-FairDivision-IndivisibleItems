@@ -69,6 +69,12 @@ def is_envy_free(alloc, agents):
     return True
 
 
+def is_envy_free_ordinally(alloc, agents):
+    if agents[0].is_ordinally_less(alloc[0]) or agents[1].is_ordinally_less(alloc[1]):
+        return False
+    return True
+
+
 def is_max_min(X, A, M):
     left = max([max([m.rank(i) for i in X[ind]]) for ind, m in enumerate(M)])
     right = min([max(
@@ -173,6 +179,7 @@ def is_borda_egalitarian(X, M):
         lambda a, b: a and b,
         [M[i].borda(X[i]) >= 1/2 * M[i].borda(goods) for i in range(len(M))]
     )
+
 
 if __name__ == '__main__':
     import fairdiv

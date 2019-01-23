@@ -22,8 +22,8 @@ def original_sequential(agents, goods):
             allocations.add((tuple(z[0]), tuple(z[1])))
             return
 
-        ha_l = agents[0].preferences[:l]
-        hb_l = agents[1].preferences[:l]
+        ha_l = agents[0].h(u, l)
+        hb_l = agents[1].h(u, l)
         found = False
 
         for i, j in itertools.combinations(u, 2):
@@ -197,6 +197,7 @@ def bottom_up(agents, goods):
         inner(1, ([], []), u)
     ])
 
+
 @cache
 def trump_algorithm(agents, goods):
     """
@@ -228,33 +229,33 @@ def trump_algorithm(agents, goods):
 
 
 if __name__ == '__main__':
-    import fairdiv
-    import fairdiv.algorithm as algorithm
+    import os
+    os.chdir('..')
 
+    import fairdiv
     # Create some constants
     NUMBER_OF_GOODS = 8
 
     # Create items
     items = [fairdiv.Good(str(i + 1)) for i in range(NUMBER_OF_GOODS)]
 
-    # Create agents. We will consider that item's number is their rank in preferences of the first
-    # agent
+    # Create agents. We will consider that item's number is their rank in preferences of the first agent
     agents = [
         fairdiv.Agent(name="A", pref=items[:]),
         fairdiv.Agent(name="B",
-                      pref=[items[1], items[4], items[5], items[0], items[6], items[2], items[7],
-                            items[3]])
+                      pref=[items[2], items[3], items[4], items[5], items[6], items[7], items[0],
+                            items[1]])
     ]
 
     # Generate all allocations for the given problem
     A = list(fairdiv.Allocation.generate_all_allocations(agents, items))
 
     results = {
-        "OS": algorithm.original_sequential(agents, items),
-        # "RS": algorithm.restricted_sequential(agents, items),
-        "SD": algorithm.singles_doubles(agents, items),
-        "BU": algorithm.bottom_up(agents, items),
-        "TA": algorithm.trump_algorithm(agents, items)
+        "OS": original_sequential(agents, items),
+        # "RS": restricted_sequential(agents, items),
+        # "SD": singles_doubles(agents, items),
+        # "BU": bottom_up(agents, items),
+        # "TA": trump_algorithm(agents, items)
     }
 
     for k, v in results.items():

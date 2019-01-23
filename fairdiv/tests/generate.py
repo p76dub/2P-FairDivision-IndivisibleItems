@@ -4,8 +4,8 @@ from multiprocessing.pool import ThreadPool
 from multiprocessing import Pool, cpu_count
 
 if __name__ == "__main__":
-    use_pool = False
-    process = False
+    use_pool = True
+    process = True
     if use_pool:
         if process:
             pool = Pool(cpu_count())

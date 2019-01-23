@@ -6,12 +6,13 @@ from multiprocessing import Pool, cpu_count
 if __name__ == "__main__":
     use_pool = True
     process = True
+    pool = None
     if use_pool:
         if process:
             pool = Pool(cpu_count())
         else:
             pool = ThreadPool(cpu_count())
-    for j in range(6):
+    for j in range(7):
         number_of_goods = (j+1) * 2
 
         print("testing with " + str(number_of_goods))
@@ -31,7 +32,7 @@ if __name__ == "__main__":
             for alloc in old_allocs:
                 allocs.append(alloc)
                 i += 1
-                if i == 100000:
+                if i == 200:
                     break
 
         if use_pool:
@@ -41,6 +42,11 @@ if __name__ == "__main__":
             for alloc in allocs:
                 a1.is_ordinally_less(alloc[0])
                 a2.is_ordinally_less(alloc[1])
-
         elapsed_time = time.time() - start_time
         print(elapsed_time)
+    if pool is not None and process:
+        res = [pool.apply_async(Database.save_files) for i in range(cpu_count())]
+        for i in range(cpu_count()):
+            res[i].wait()
+        pool.close()
+        pool.join()

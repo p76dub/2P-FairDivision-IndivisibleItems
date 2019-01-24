@@ -72,8 +72,9 @@ class Benchmark(object):
         Initializes a benchmark.
         :param problems: The problems that the benchmark should be run on. Should be an iterable of tuples (agents, goods)
         :type problems: collections.Iterable
-        :param algorithms: The algorithms to benchmark, should be an iterable of functions that accept two parameters : agents & goods.
-        :type algorithms: collections.Iterable
+        :param algorithms: The algorithms to benchmark, should be a dict name -> functions that
+        accept two parameters : agents & goods.
+        :type algorithms: dict
         :param properties: The properties to test, a dict key -> function that will be applied to new allocations.
         Functions must take these arguments : alloc, all_allocs, agents. Use lambda if some parameters aren't used.
         :type properties: dict
@@ -89,67 +90,18 @@ class Benchmark(object):
         problem -> statistics object
         """
         result = dict()
-        for algorithm in self.algorithms:
-            result[algorithm.__qualname__] = dict()
+        for name, algo in self.algorithms.items():
+            result[name] = dict()
             for problem in self.problems:
                 allocations = Allocation.generate_all_allocations(*problem)
-                result[algorithm.__qualname__][str(problem)] = Statistics(allocations, problem[0], self.properties)
-                for solution in algorithm(*problem):
-                    result[algorithm.__qualname__][str(problem)].add(solution)
+                result[name][str(problem[0][1].preferences)] = Statistics(
+                    allocations,
+                    problem[0],
+                    self.properties
+                )
+                for solution in algo(*problem):
+                    result[name][str(problem[0][1].preferences)].add(solution)
         return result
-
-
-def gather_data(agents, allocs, all_allocs, pareto=True, max_min=True, envy=True):
-    # Eliminate duplicates
-    uniques = []
-    for a in allocs:
-        if a not in uniques:
-            uniques.append(a)
-
-    allocs = uniques
-
-    # Create structure
-    stats = {
-        "Allocations found": len(allocs),
-        "Explored space": len(allocs) / len(all_allocs),
-        "Allocations": []
-    }
-
-    # Iterate over allocations and create stats about them
-    for alloc in allocs:
-        a_stats = {
-            agents[i]: v for i, v in enumerate(alloc)
-        }
-
-        if pareto:
-            a_stats["Is pareto"] = prop.is_pareto(alloc, all_allocs, agents)
-
-        if max_min:
-            a_stats["Is max-min"] = prop.is_max_min(alloc, all_allocs, agents)
-
-        if envy:
-            a_stats["Is envy-free"] = prop.is_envy_free(alloc, agents)
-
-        stats["Allocations"].append({"Allocation": a_stats})
-
-    return stats
-
-
-def print_statistics(stats):
-
-    def print_one(s):
-        print("Allocations found: {}".format(s["Allocations found"]))
-        print("Explored space: {}".format(s["Explored space"]))
-        print("Allocations :")
-        for alloc in s["Allocations"]:
-            for k, v in alloc.items():
-                print("\t{}: {}".format(k, v))
-
-    if type(stats) == list:
-        for e in stats:
-            print_one(e)
-    else:
-        print_one(stats)
 
 
 if __name__ == "__main__":

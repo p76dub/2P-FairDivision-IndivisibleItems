@@ -69,6 +69,17 @@ def is_envy_free(alloc, agents):
     return True
 
 
+def is_pareto_ordinally(X, A, M):
+    found = False
+    i = 0
+
+    while not found and i < len(A):
+        for j in range(len(M)):
+            found = found or M[j].is_ordinally_less(X[j], A[i][j])
+
+    return not found
+
+
 def is_envy_free_ordinally(alloc, agents):
     if agents[0].is_ordinally_less(alloc[0]) or agents[1].is_ordinally_less(alloc[1]):
         return False
@@ -88,16 +99,16 @@ def is_borda_pareto(X, A, M):
     Test if allocation X is Borda pareto given agents m and all available allocations
 
     :param X: allocation to test
-    :param A: all available allocations for current problem§
+    :param A: all available allocations for current problem
     :param M: the agents
     :return: True if X is Borda pareto, 
     """
     ba = M[0].borda(X[0])
     bb = M[1].borda(X[1])
 
-    for (Ai, Bi) in A:
-        bai = M[0].borda(Ai)
-        bbi = M[1].borda(Bi)
+    for Y in A:
+        bai = M[0].borda(Y[0])
+        bbi = M[1].borda(Y[1])
 
         if (bai > ba and bbi >= bb) or (bbi > bb and bai >= ba):
             return False

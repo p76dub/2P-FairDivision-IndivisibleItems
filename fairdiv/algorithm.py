@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
-from properties import is_pareto, is_envy_free_ordinally, is_max_min
-from fairdiv import *
+import itertools
+from properties import is_envy_free_ordinally
+from fairdiv import Allocation, max_min_rank
 from cacheUtils import *
 
 
@@ -233,30 +234,29 @@ if __name__ == '__main__':
     os.chdir('..')
 
     import fairdiv
+    import fairdiv.properties as props
+
     # Create some constants
-    NUMBER_OF_GOODS = 8
+    NUMBER_OF_GOODS = 4
 
     # Create items
-    items = [fairdiv.Good(str(i + 1)) for i in range(NUMBER_OF_GOODS)]
+    items = [fairdiv.Good(i + 1) for i in range(NUMBER_OF_GOODS)]
 
     # Create agents. We will consider that item's number is their rank in preferences of the first agent
     agents = [
         fairdiv.Agent(name="A", pref=items[:]),
-        fairdiv.Agent(name="B",
-                      pref=[items[2], items[3], items[4], items[5], items[6], items[7], items[0],
-                            items[1]])
+        fairdiv.Agent(name="B", pref=[items[0], items[2], items[1], items[3]])
     ]
 
     # Generate all allocations for the given problem
     A = list(fairdiv.Allocation.generate_all_allocations(agents, items))
+    for alloc in A:
+        print('{} -> {}'.format(alloc, props.is_envy_free_ordinally(alloc, agents)))
 
-    results = {
-        "OS": original_sequential(agents, items),
-        # "RS": restricted_sequential(agents, items),
-        # "SD": singles_doubles(agents, items),
-        # "BU": bottom_up(agents, items),
-        # "TA": trump_algorithm(agents, items)
-    }
+    result = original_sequential(agents, items)
+    print("OS: {}".format(result))
 
-    for k, v in results.items():
-        print("{}: {}".format(k, v))
+    TR = trump_algorithm(agents, items)
+    print("TR: {}".format(TR))
+    for alloc in TR:
+        print(props.is_pareto_ordinally(alloc, A, agents))

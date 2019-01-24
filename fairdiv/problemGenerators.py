@@ -1,5 +1,5 @@
 from cacheUtils import cache
-from fairdiv import Good, Agent, Utils
+from fairdiv import Good, Agent
 from algorithm import trump_algorithm
 import itertools
 

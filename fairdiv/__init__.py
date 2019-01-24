@@ -9,7 +9,6 @@ class Utils(object):
     """
     Groups some utility methods
     """
-
     @staticmethod
     @mem_cache(cache_size=1000)
     def get_possible_injections(alloc1, alloc2):
@@ -233,7 +232,9 @@ class Agent(object):
 
 
 class Allocation(object):
-
+    """
+    Represents an allocation of goods for two agents
+    """
     def __init__(self, agent1, goods1, agent2, goods2):
         """
         :param agent1:

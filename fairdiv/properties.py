@@ -2,19 +2,25 @@
 import functools
 
 
-def is_pareto(alloc, allocs, agents):
-    xa = sorted([agents[0].rank(g) for g in alloc[0]])
-    xb = sorted([agents[1].rank(g) for g in alloc[1]])
+def is_pareto(X, A, M):
+    """
+    :param X: An allocation
+    :param A: The possible allocations
+    :param M: The agents
+    :return: True if the allocation verifies the pareto property
+    """
+    xa = sorted([M[0].rank(g) for g in X[0]])
+    xb = sorted([M[1].rank(g) for g in X[1]])
 
-    for x in allocs:
-        if alloc == x:
+    for x in A:
+        if X == x:
             continue
 
         ya = x[0]
         yb = x[1]
 
-        ra = sorted([agents[0].rank(i) for i in ya])
-        rb = sorted([agents[1].rank(i) for i in yb])
+        ra = sorted([M[0].rank(i) for i in ya])
+        rb = sorted([M[1].rank(i) for i in yb])
 
         # Check agent A
         higher = False
@@ -51,12 +57,17 @@ def is_pareto(alloc, allocs, agents):
     return True
 
 
-def is_envy_free(alloc, agents):
-    xa = sorted([agents[0].rank(i) for i in alloc[0]])
-    xb = sorted([agents[1].rank(i) for i in alloc[1]])
+def is_envy_free(X, M):
+    """
+    :param X: An allocation
+    :param M: The agents
+    :return: True if the allocation is envy free
+    """
+    xa = sorted([M[0].rank(i) for i in X[0]])
+    xb = sorted([M[1].rank(i) for i in X[1]])
 
-    ya = sorted([agents[1].rank(i) for i in alloc[0]])
-    yb = sorted([agents[0].rank(i) for i in alloc[1]])
+    ya = sorted([M[1].rank(i) for i in X[0]])
+    yb = sorted([M[0].rank(i) for i in X[1]])
 
     for i in range(len(xa)):
         if xa[i] > ya[i]:  # Not sure if it is correct
@@ -70,6 +81,12 @@ def is_envy_free(alloc, agents):
 
 
 def is_pareto_ordinally(X, A, M):
+    """
+    :param X: An allocation
+    :param A: The possible allocations
+    :param M: The agents
+    :return: True if the allocation verifies the ordinally pareto property
+    """
     found = False
     i = 0
 
@@ -81,12 +98,23 @@ def is_pareto_ordinally(X, A, M):
 
 
 def is_envy_free_ordinally(alloc, agents):
+    """
+    :param alloc: An allocation
+    :param agents: The agents
+    :return: True if the allocation verifies the ordinally envy free property
+    """
     if agents[0].is_ordinally_less(alloc[0]) or agents[1].is_ordinally_less(alloc[1]):
         return False
     return True
 
 
 def is_max_min(X, A, M):
+    """
+    :param X: An allocation
+    :param A: The possible allocations
+    :param M: The agents
+    :return: True if the allocation verifies the max min property
+    """
     left = max([max([m.rank(i) for i in X[ind]]) for ind, m in enumerate(M)])
     right = min([max(
         [max([m.rank(i) for i in Y[ind]]) for ind, m in enumerate(M)]

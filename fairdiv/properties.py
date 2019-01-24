@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 import functools
+from cacheUtils import cache
 
 
+@cache
 def is_pareto(X, A, M):
     """
     :param X: An allocation
@@ -57,6 +59,7 @@ def is_pareto(X, A, M):
     return True
 
 
+@cache
 def is_envy_free(X, M):
     """
     :param X: An allocation
@@ -80,6 +83,7 @@ def is_envy_free(X, M):
     return True
 
 
+@cache
 def is_pareto_ordinally(X, A, M):
     """
     :param X: An allocation
@@ -97,6 +101,7 @@ def is_pareto_ordinally(X, A, M):
     return not found
 
 
+@cache
 def is_envy_free_ordinally(alloc, agents):
     """
     :param alloc: An allocation
@@ -108,6 +113,7 @@ def is_envy_free_ordinally(alloc, agents):
     return True
 
 
+@cache
 def is_max_min(X, A, M):
     """
     :param X: An allocation
@@ -122,6 +128,7 @@ def is_max_min(X, A, M):
     return left == right
 
 
+@cache
 def is_borda_pareto(X, A, M):
     """
     Test if allocation X is Borda pareto given agents m and all available allocations
@@ -144,6 +151,7 @@ def is_borda_pareto(X, A, M):
     return True
 
 
+@cache
 def is_maximal_borda_sum(X, A, M):
     """
     Test if an allocation X is maximal-Borda-sum given agents m and all available allocations
@@ -158,6 +166,7 @@ def is_maximal_borda_sum(X, A, M):
     )
 
 
+@cache
 def is_borda_envy_free(X, M):
     """
     Test if the provided allocation X is borda_envy_free
@@ -168,6 +177,7 @@ def is_borda_envy_free(X, M):
     return M[0].borda(X[0]) >= M[0].borda(X[1]) and M[1].borda(X[1]) >= M[1].borda(X[0])
 
 
+@cache
 def is_borda_max_min(X, A, M):
     """
     Test if an allocation is Borda max-min.
@@ -182,6 +192,7 @@ def is_borda_max_min(X, A, M):
     return left == right
 
 
+@cache
 def is_borda_nash(X, A, M):
     """
     Test if an allocation is Borda Nash, ie M[0].borda(X[0]) * M[1].borda(X[1]) is the best among
@@ -199,6 +210,7 @@ def is_borda_nash(X, A, M):
     return left == right
 
 
+@cache
 def is_borda_egalitarian(X, M):
     """
     Test if the allocation is Borda egalitarian, meaning that M[0].borda(X[0]) >= 1/2 * M[

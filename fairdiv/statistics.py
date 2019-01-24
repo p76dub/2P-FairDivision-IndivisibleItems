@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import properties as prop
 from fairdiv import Allocation
 
 
@@ -119,7 +118,10 @@ if __name__ == "__main__":
     a2.preferences = [
         goods[1], goods[3], goods[0], goods[2]
     ]
-    algorithms = [algorithm.bottom_up, algorithm.original_sequential, algorithm.restricted_sequential]
+    algorithms = {"bottom_up": algorithm.bottom_up,
+                  "os": algorithm.original_sequential,
+                  "rs": algorithm.restricted_sequential}
+
     problems = [((a1, a2), goods)]
     prop = [properties.is_pareto]
 

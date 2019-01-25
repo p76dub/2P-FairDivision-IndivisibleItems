@@ -97,7 +97,7 @@ def is_pareto_ordinally(X, A, M):
     while not found and i < len(A):
         for j in range(len(M)):
             found = found or M[j].is_ordinally_less(X[j], A[i][j])
-
+        i += 1
     return not found
 
 

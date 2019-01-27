@@ -126,6 +126,7 @@ if __name__ == "__main__":
     prop = [properties.is_pareto]
 
     prop = {func.__qualname__: func for func in prop}
+    algorithms = {func.__qualname__: func for func in algorithms}
 
     benchmark = Benchmark(problems, algorithms, prop)
 

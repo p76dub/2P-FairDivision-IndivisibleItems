@@ -224,7 +224,7 @@ def is_borda_egalitarian(X, M):
     goods = []
     for am in X:
         goods.extend(am)
-
+    goods = set(goods)
     # Compute result
     return functools.reduce(
         lambda a, b: a and b,

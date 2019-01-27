@@ -272,6 +272,9 @@ class Allocation(object):
             return self.g2
         return None
 
+    def __iter__(self):
+        yield from [self.g1, self.g2]
+
     @staticmethod
     @mem_cache(cache_size=10)
     def generate_all_allocations(agents, goods):

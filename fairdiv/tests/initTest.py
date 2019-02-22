@@ -1,26 +1,28 @@
 from fairdiv import *
-from fairdiv.problemGenerators import generate_possible_problems
+from funcache import MemoryCache
+from multiprocessing import Pool
 import math
 
 
-@mem_cache(cache_size=10)
+@MemoryCache(cache_size=300)
 def cache_test(x):
     return x*x
+
+
+def test(i):
+    return cache_test(i)
 
 
 if __name__ == "__main__":
 
     args = range(1000)
-    for i in args:
-        cache_content = set([(args[i-j], ) for j in range(10) if i-j>=0])
-        cache_test(i)
-        actual_cache_content = set(key for key in Database._mem_cache['cache_test'])
-        assert actual_cache_content == cache_content
-
+    pool = Pool(2)
+    MemoryCache.enable_multiprocessing(pool, 2)
+    FileCache.enable_multiprocessing(pool, 2)
+    pool.map(test, range(200))
     for i in range(7):
-        assert len(generate_possible_problems(i+2)) == math.factorial(i+2)
-        generate_possible_problems(i+2, True)
-    for j in range(9):
+        assert len(Problem.generate_possible_problems(i+2)) == math.factorial(i+2)
+    for j in range(10):
         number_of_goods = (j+1) * 2
 
         print("testing with " + str(number_of_goods))
@@ -31,6 +33,7 @@ if __name__ == "__main__":
 
         a1 = Agent("agent1", goods[:])
         a2 = Agent("agent2", goods[::-1])
+        problem = Problem((a1, a2), goods)
         assert a1.top() == goods[0]
         assert a1.sb() == goods[1]
         assert a1.last() == goods[number_of_goods-1]
@@ -53,7 +56,7 @@ if __name__ == "__main__":
         assert a1.h(even_goods, number_of_goods//2) == [goods[i] for i in range(number_of_goods) if i % 2 == 0 and i < number_of_goods//2]
         assert a2.h(even_goods, number_of_goods//2) == [goods[i] for i in reversed(range(number_of_goods)) if i % 2 == 0 and i >= number_of_goods//2]
 
-        assert max_min_rank([a1, a2], goods) == number_of_goods//2
+        assert problem.max_min_rank() == number_of_goods//2
 
         assert a1.is_ordinally_less(odd_goods)
         assert not a1.is_ordinally_less(even_goods)

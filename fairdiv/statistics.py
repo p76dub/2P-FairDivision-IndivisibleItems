@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 from fairdiv import Allocation
+from funcache import FileCache, MemoryCache
+from multiprocessing import Pool, cpu_count
+import time
 
 
 class Statistics(object):
@@ -59,77 +62,3 @@ class Statistics(object):
 
     def __repr__(self):
         return self.formatted_text()
-
-
-class Benchmark(object):
-    """
-    This class is used to benchmark the different algorithms on various problem.
-    A benchmark is defined by problems, the algorithms to run on those problems & the properties to test on the solutions
-    """
-    def __init__(self, problems, algorithms, properties):
-        """
-        Initializes a benchmark.
-        :param problems: The problems that the benchmark should be run on. Should be an iterable of tuples (agents, goods)
-        :type problems: collections.Iterable
-        :param algorithms: The algorithms to benchmark, should be a dict name -> functions that
-        accept two parameters : agents & goods.
-        :type algorithms: dict
-        :param properties: The properties to test, a dict key -> function that will be applied to new allocations.
-        Functions must take these arguments : alloc, all_allocs, agents. Use lambda if some parameters aren't used.
-        :type properties: dict
-        """
-        self.problems = problems
-        self.algorithms = algorithms
-        self.properties = properties
-
-    def run(self):
-        """
-        Runs the benchmark
-        :return: A dictionary where the keys are the qualnames of the algorithms & the values are also dictionaries
-        problem -> statistics object
-        """
-        result = dict()
-        for name, algo in self.algorithms.items():
-            result[name] = dict()
-            for problem in self.problems:
-                allocations = Allocation.generate_all_allocations(*problem)
-                result[name][str(problem[0][1].preferences)] = Statistics(
-                    allocations,
-                    problem[0],
-                    self.properties
-                )
-                for solution in algo(*problem):
-                    result[name][str(problem[0][1].preferences)].add(solution)
-        return result
-
-
-if __name__ == "__main__":
-    from fairdiv import Agent, Good
-    import algorithm
-    import properties
-    goods = [Good(str(i)) for i in range(4)]
-
-    a1 = Agent("A")
-    a1.preferences = [
-        goods[0], goods[2], goods[1], goods[3]
-    ]
-
-    a2 = Agent("B")
-    a2.preferences = [
-        goods[1], goods[3], goods[0], goods[2]
-    ]
-    algorithms = {"bottom_up": algorithm.bottom_up,
-                  "os": algorithm.original_sequential,
-                  "rs": algorithm.restricted_sequential}
-
-    problems = [((a1, a2), goods)]
-    prop = [properties.is_pareto]
-
-    prop = {func.__qualname__: func for func in prop}
-    algorithms = {func.__qualname__: func for func in algorithms}
-
-    benchmark = Benchmark(problems, algorithms, prop)
-
-    result = benchmark.run()
-
-    print(result)

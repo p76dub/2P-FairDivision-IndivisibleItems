@@ -2,7 +2,7 @@
 import collections
 import itertools
 from functools import total_ordering
-from cacheUtils import *
+from funcache import MemoryCache, FileCache
 
 
 class Utils(object):
@@ -10,7 +10,7 @@ class Utils(object):
     Groups some utility methods
     """
     @staticmethod
-    @mem_cache(cache_size=1000)
+    @MemoryCache(cache_size=1000)
     def get_possible_injections(alloc1, alloc2):
         """
         Returns a list of possible mappings from alloc1 to alloc2.
@@ -179,7 +179,7 @@ class Agent(object):
         return self.rank(good1) < self.rank(good2)
 
     @staticmethod
-    @cache
+    @FileCache()
     def _is_ordinally_less(agent, alloc1, alloc2):
         """
         Checks if :param:`alloc1` is ordinally less than :param:`alloc2` for agent :param:`agent`
@@ -251,6 +251,11 @@ class Allocation(object):
         self.g2 = tuple(sorted(goods2))
 
     def __eq__(self, other):
+        """
+        An agent is equal to another one if they concern the same agents and give the same goods for the agents
+        :param other:
+        :return:
+        """
         if not isinstance(other, Allocation):
             return False
         else:
@@ -276,7 +281,7 @@ class Allocation(object):
         yield from [self.g1, self.g2]
 
     @staticmethod
-    @mem_cache(cache_size=10)
+    @MemoryCache(cache_size=10)
     def generate_all_allocations(agents, goods):
         '''
         :param agents: the two agents
@@ -304,19 +309,57 @@ class Allocation(object):
         return result
 
 
-def max_min_rank(agents, goods):
+class Problem(object):
     """
-    :param agents: The agents
-    :param goods: The goods
-    :return: Computes the max_min_rank of a problem as defined in the article
+    This class represents fair division problems with indivisible items and agents with ordinal preferences over them
     """
-    k = 0
-    for good in goods:
-        best_rank = len(goods)
-        for agent in agents:
-            rank = agent.rank(good)
-            if rank <= best_rank:
-                best_rank = rank
-        if k <= best_rank:
-            k = best_rank
-    return k
+    def __hash__(self):
+        return tuple((self.agents, self.goods)).__hash__()
+
+    def __eq__(self, other):
+        if isinstance(other, Problem):
+            return other.agents == self.agents and other.goods == self.goods
+        return False
+
+    def __init__(self, agents, goods):
+        """
+        Initializes a problem
+        :param agents: The agents of the problem
+        :type agents: collections.Iterable
+        :param goods: The goods of the problem
+        :type goods: collections.Iterable
+        """
+        self.agents = tuple(agents)
+        self.goods = tuple(goods)
+
+    def max_min_rank(self):
+        """
+        :return: Computes the max_min_rank of the problem as defined in the article
+        """
+        k = 0
+        for good in self.goods:
+            best_rank = len(self.goods)
+            for agent in self.agents:
+                rank = agent.rank(good)
+                if rank <= best_rank:
+                    best_rank = rank
+            if k <= best_rank:
+                k = best_rank
+        return k
+
+    @staticmethod
+    @FileCache()
+    def generate_possible_problems(problems_size=2):
+        """
+        :param problems_size: The size of the desired problems (should an even number)
+        :type problems_size: int
+        :return: All the possible problems of the given size
+        """
+        problems = list()
+        goods = [Good(str(i)) for i in range(problems_size)]
+        for preferences_b in itertools.permutations(goods):
+            a = Agent("A", goods[:])
+            b = Agent("B", list(preferences_b))
+            problem = Problem((a, b), goods)
+            problems.append(problem)
+        return problems
